@@ -1,0 +1,37 @@
+# Project: ScilabSerialLib
+# Makefile created by Dev-C++ 4.9.9.2
+
+CPP  = g++.exe
+CC   = gcc.exe
+WINDRES = windres.exe
+RES  = 
+OBJ  = obj/siseli.o obj/asSerial.o $(RES)
+LINKOBJ  = obj/siseli.o obj/asSerial.o $(RES)
+LIBS =  -L"C:/WINDOWSPRG/DevCpp/lib" -L"lib" --no-export-all-symbols --add-stdcall-alias lib/Test_LIB.a  
+INCS =  -I"C:/WINDOWSPRG/DevCpp/include"  -I"inc" 
+CXXINCS =  -I"C:/WINDOWSPRG/DevCpp/lib/gcc/mingw32/3.4.2/include"  -I"C:/WINDOWSPRG/DevCpp/include/c++/3.4.2/backward"  -I"C:/WINDOWSPRG/DevCpp/include/c++/3.4.2/mingw32"  -I"C:/WINDOWSPRG/DevCpp/include/c++/3.4.2"  -I"C:/WINDOWSPRG/DevCpp/include"  -I"inc" 
+BIN  = out/siseli.dll
+CXXFLAGS = $(CXXINCS) -DBUILDING_DLL=1  
+CFLAGS = $(INCS) -DBUILDING_DLL=1  
+RM = rm -f
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before out/siseli.dll all-after
+
+
+clean: clean-custom
+	${RM} $(OBJ) $(BIN)
+
+DLLWRAP=dllwrap.exe
+DEFFILE=out/libsiseli.def
+STATICLIB=out/libsiseli.a
+
+$(BIN): $(LINKOBJ)
+	$(DLLWRAP) --output-def $(DEFFILE) --driver-name c++ --implib $(STATICLIB) $(LINKOBJ) $(LIBS) -o $(BIN)
+
+obj/siseli.o: siseli.cpp
+	$(CPP) -c siseli.cpp -o obj/siseli.o $(CXXFLAGS)
+
+obj/asSerial.o: asSerial.cpp
+	$(CPP) -c asSerial.cpp -o obj/asSerial.o $(CXXFLAGS)
