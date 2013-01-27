@@ -1,6 +1,6 @@
 //
 // siseli; ScilabSerialLibrary
-// ASkr, 2010, 2012; www askrprojects.net
+// FMMT666(ASkr), 2010, 2012, 2013; www askrprojects.net
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -24,15 +24,7 @@
 
 
 // I know, I know. Shut up... ;)
-static asSerial *cPort[MAXPORTS];
-
-
-//
-// TODO:
-//
-//  - check if COM port open (read/write)
-//
-
+static asSerial *cPort[ MAXPORTS ];
 
 
 
@@ -48,7 +40,6 @@ DLLIMPORT void init(int *OK)
 		cPort[i]=NULL;
 	*OK=1;
 }
-
 
 
 
@@ -320,10 +311,13 @@ DLLIMPORT void recva (int *handle, int *bytes)
 	int i,j=0;
 	int *tmp;
 	
-	if( (*handle<1)||(*handle>MAXPORTS))
+	if( (*handle < 1) || ( *handle > MAXPORTS ) )
 		return;
-	if(cPort[(*handle)-1]==NULL)
+	if( cPort[ (*handle) - 1 ] == NULL )
 		return;
+
+	// DID I WRITE THAT? #1
+	// Seems so... *confused*
 		
 	// A maximum of 32 bytes will be returned.
 	// The first byte of the array is the amount of data written, the
@@ -333,13 +327,11 @@ DLLIMPORT void recva (int *handle, int *bytes)
   // 5 bytes in the buffer, the 6th access to RecVRawByte() returns "-1".
   // Now, additional data arrives at, e.g., i==32...
   
-	tmp=bytes++;
+	tmp = bytes++;
 
-	memset((int *)bytes,-1,32);
-
-	for(i=0;i<32;i++)
+	for( i=0; i < 32; i++ )
 	{
-		if( (*bytes++=cPort[(*handle)-1]->RecvRawByte(0)) >= 0)
+		if( ( *bytes++ = cPort[(*handle)-1]->RecvRawByte(0) ) >= 0 )
 			j++;
 	}
 	*tmp=j;
@@ -363,6 +355,9 @@ DLLIMPORT void recvan (int *handle, int *length, int *bytes)
 		return;
 	if( *length < 1 )
 		return;
+
+	// DID I WRITE THAT? #2
+	// Seems so... *confused*
 		
 	// A variable number of bytes will be returned.
 	// The first byte of the array is the amount of data written, the
@@ -374,14 +369,59 @@ DLLIMPORT void recvan (int *handle, int *length, int *bytes)
   
 	tmp = bytes++;
 
-	memset( (int *)bytes, -1, (*length) );
-
 	for( i=0; i<(*length); i++ )
 	{
 		if( (*bytes++ = cPort[ (*handle)-1 ] -> RecvRawByte(0) ) >= 0 )
 			j++;
 	}
 	*tmp = j;
+}
+
+
+
+//************************************************************************************************
+//*** 
+//***
+//***
+//************************************************************************************************
+DLLIMPORT void recvap (int *handle, int *length, int *bytes)
+{
+	int i;
+	int *tmp;
+	
+	if( (*handle<1) || (*handle>MAXPORTS) )
+		return;
+	if( cPort[(*handle)-1] == NULL )
+		return;
+	if( *length < 1 )
+		return;
+  
+	tmp = bytes++;
+
+	// TODO: This does not work and I have not the slightest clue why...
+//	memset( (int *)bytes, -1, *length );
+	for( i=0; i < *length; i++ )
+		*bytes++ = -1;
+	bytes = tmp;
+
+	*tmp = cPort[(*handle)-1]->RecvRawPacketByte( bytes, *length );
+}
+
+
+
+//************************************************************************************************
+//*** countp
+//***
+//*** Count number of complete packets in buffer.
+//************************************************************************************************
+DLLIMPORT void countp (int *handle, int *count)
+{
+	if( (*handle<1)||(*handle>MAXPORTS))
+		return;
+	if(cPort[(*handle)-1]==NULL)
+		return;
+	
+	*count = cPort[(*handle)-1]->BufferCountPackets();
 }
 
 
@@ -420,12 +460,13 @@ DLLIMPORT void packs (int *handle, int *packstart, int *OK)
 
 	*OK=0;
 
-	if( (*handle<1)||(*handle>MAXPORTS))
+	if( ( *handle < 1 ) || ( *handle > MAXPORTS ) )
 		return;
-	if(cPort[(*handle)-1]==NULL)
+		
+	if( cPort[ (*handle) -1 ] == NULL )
 		return;
 
-	if(cPort[(*handle)-1]->ConfigPacketStart(packstart) == ERROR_SUCCESS	)
+	if( cPort[ (*handle) - 1 ]->ConfigPacketStart( packstart ) == ERROR_SUCCESS	)
 		*OK=1;
 }
 
@@ -436,18 +477,19 @@ DLLIMPORT void packs (int *handle, int *packstart, int *OK)
 //***
 //***
 //************************************************************************************************
-DLLIMPORT void packe  (int *handle, int *packend, int *OK)
+DLLIMPORT void packe (int *handle, int *packend, int *OK)
 {
 	int i;
 
 	*OK=0;
 
-	if( (*handle<1)||(*handle>MAXPORTS))
+	if( ( *handle < 1 ) || ( *handle > MAXPORTS ) )
 		return;
-	if(cPort[(*handle)-1]==NULL)
+		
+	if( cPort[ (*handle) - 1 ] == NULL )
 		return;
 
-	if(cPort[(*handle)-1]->ConfigPacketEnd(packend) == ERROR_SUCCESS	)
+	if( cPort[ (*handle) - 1 ]->ConfigPacketEnd( packend ) == ERROR_SUCCESS	)
 		*OK=1;
 }
 
@@ -458,16 +500,17 @@ DLLIMPORT void packe  (int *handle, int *packend, int *OK)
 //***
 //***
 //************************************************************************************************
-DLLIMPORT void packc  (int *handle, int *packchar, int *OK)
+DLLIMPORT void packc (int *handle, int *packchar, int *OK)
 {
 	*OK=0;
 
-	if( (*handle<1)||(*handle>MAXPORTS))
+	if( ( *handle < 1 ) || ( *handle > MAXPORTS ) )
 		return;
-	if(cPort[(*handle)-1]==NULL)
+		
+	if( cPort[ (*handle) - 1 ] == NULL )
 		return;
 
-	if(cPort[(*handle)-1]->ConfigPacketChar(*packchar) == ERROR_SUCCESS	)
+	if( cPort[ (*handle) - 1 ]->ConfigPacketChar( *packchar ) == ERROR_SUCCESS	)
 		*OK=1;
 }
 

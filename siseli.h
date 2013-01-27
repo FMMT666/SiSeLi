@@ -1,6 +1,6 @@
 //
 // siseli; Scilab Serial Library
-// ASkr, 2010, 2012; www askrprojects.net
+// FMMT666(ASkr), 2010, 2012, 2013; www askrprojects.net
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -18,7 +18,7 @@
 
 
 
-#define SISELI_VER  05						// decimal notation
+#define SISELI_VER  06						// decimal notation
 
 
 // CHANGES:
@@ -36,7 +36,15 @@
 //			- added baudrates >256000, up to 3MBit/s
 // 			- removed an error handling bug in some functions (see "ERROROR")
 //
-
+//		V0.6:
+//			- experimental packet receive algorithm
+//      - reworked the packet algorithm ("DLE" standard):
+//        - always two byte packet start     [DLE][STA]
+//        - always two byte packet end       [DLE][END]
+//        - special character is always DLE  [DLE]
+//        - packet end can be skippped (first entry in <packetEnd[]> array set to -1
+//        - packet start can not be skipped
+//
 
 
 
@@ -64,11 +72,12 @@ extern "C"
 	DLLIMPORT void sendb  (int *handle, int *byte, int *OK);
 	DLLIMPORT void senda  (int *handle, int *bytes, int *length, int *OK);
 	DLLIMPORT void count  (int *handle, int *count);
+	DLLIMPORT void countp (int *handle, int *count);
 	DLLIMPORT void recvb  (int *handle, int *block, int *byte);
 	DLLIMPORT void flush  (int *handle, int *OK);
 	DLLIMPORT void recva  (int *handle, int *bytes);
 	DLLIMPORT void recvan (int *handle, int *length, int *bytes);
-
+	DLLIMPORT void recvap (int *handle, int *length, int *bytes);
 	DLLIMPORT void packs  (int *handle, int *packstart, int *OK);
 	DLLIMPORT void packe  (int *handle, int *packend, int *OK);
 	DLLIMPORT void packc  (int *handle, int *packchar, int *OK);

@@ -1,6 +1,6 @@
 //
 // asSerial, a CSerial wrapper object (for Scilab)
-// ASkr, 2010; www askrprojects.net
+// FMMT666(ASkr), 2010, 2012, 2013; www askrprojects.net
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#define MAXPORTS		8
+#define MAXPORTS		16
 
 #define NONBLOCKING 0
 #define BLOCKING    1
@@ -45,8 +45,10 @@ class asSerial
 		int SendRaw(int *data, int len);					// sends an array to the serial interface
 		int SendRawByte(int ch);									// sends a single byte to the serial interface
 		int RecvRawByte(int blocked);							// read a single byte from the RX buffer (NONBLOCKING/BLOCKED)
+		int RecvRawPacketByte(int *data, int len);// read a single byte from the RX buffer (NONBLOCKING/BLOCKED)
 		void BufferFlush();												// empties the content of the RX buffer
 		int BufferCount();												// returns the amount of data bytes in the RX buffer; -1 on overflow
+		int BufferCountPackets();									// returns the number of packets in the RX buffer
 		
 		int SendPacket(int *data, int len);				// sends a packet to the serial interface
 		int RecvPacket(int *data);								// (not yet) reads a packet from the RX buffer

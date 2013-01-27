@@ -1,6 +1,6 @@
 mode(0)  // echo off
 // #############################
-// ### SCILAB LIBRARY LOADER ### V1.0
+// ### SCILAB LIBRARY LOADER ### V1.1
 // #############################
 //
 // ScilabSerialLib (SiSeLi)
@@ -22,8 +22,17 @@ mode(0)  // echo off
 //   was executed!
 //
 //
-// CHANGES V0.2, 10/2012:
-//  - added "slReadArrayN()", "recvan()"
+// CHANGES V1.0, 10/2012:
+//  - added "slReadArrayN()",  "recvan()"
+//
+// CHANGES V1.1, 10/2012:
+//  - added "slReadPacket()",  "recvap()"
+//  - added "slCountPacket()", "countp()"
+//  - changed 
+//      - slSetPacketStart()
+//      - slSetPacketEnd()
+//      - slSetPacketChar()
+//    They use only >>1<< character, now (see documentation)
 //
 
 
@@ -71,6 +80,8 @@ function slLoad()
         slFuncs(1,17)=link("siseli.dll","packe","c");
         slFuncs(1,18)=link("siseli.dll","packc","c");
         slFuncs(1,19)=link("siseli.dll","recvan","c");
+        slFuncs(1,20)=link("siseli.dll","recvap","c");
+        slFuncs(1,21)=link("siseli.dll","countp","c");
     catch
         printf("\n*\n")
         printf("* ERROR: Unable to load ScilabSerialLibrary\n*\n\n")
@@ -186,6 +197,14 @@ endfunction
 
 
 //*****************************************************************************
+//*** slCountPacket
+//*****************************************************************************
+function res=slCountPacket(nHandle)
+    res=fort("countp",nHandle,1,"i","out",[1,1],2,"i")
+endfunction
+
+
+//*****************************************************************************
 //*** slReadByte
 //*****************************************************************************
 function res=slReadByte(nHandle, nBlock)
@@ -223,6 +242,19 @@ endfunction
 function res=slReadArrayN(nHandle, nLength)
     tmp=ones(1,nLength+1)*-1;
     tmp=fort("recvan",nHandle,1,"i",nLength,2,"i","out",[1,nLength+1],3,"i");
+    res=tmp;
+endfunction
+
+
+//*****************************************************************************
+//*** slReadPacket
+//***  - First byte in the array is the amount of data available
+//***  => therefore, array size is always <nLength + 1> (+2 for safety ;-)
+//***  - 2nd parameter specifies number of bytes to read
+//*****************************************************************************
+function res=slReadPacket(nHandle, nLength)
+    tmp=ones(1,nLength+1)*-1;
+    tmp=fort("recvap",nHandle,1,"i",nLength,2,"i","out",[1,nLength+1],3,"i");
     res=tmp;
 endfunction
 

@@ -1,41 +1,41 @@
 
-  ScilabSerialLib (SiSeLi) Mini Documentation, V0.5
+  ScilabSerialLib (SiSeLi) Mini Documentation, V0.6
  ===================================================
-  Serial Port DLL for Scilab (Windoze).
-  (c)ASkr, 10/2012
+  Serial Port library for Scilab (Windoze).
+  (c)ASkr, 10/2010 .. 02/2013
   www.askrprojects.net
 
   
 
 1.0 INTRODUCTION
 
-    A serial port DLL for Scilab and Windoze.
-    No time for sensless drivel, just a few words and then on to the interesting part:
-    
-    Scilab, serial, unhappy, didn't work, few hours, programming, new one, 1-8 ports, sharing
-    ;-)
+    A serial port library for Scilab and Windoze.
 
-    
+      FEATURES:
+
+        - Supports all kinds of serial ports, including USB, Bluetooth or virtual connections.      
+        - baud rates up to 3MBit/s
+        - up to 16 simultaneous connections
+        - easy to use
+        - ...
+
+
 1.1 FEATURES    
 
     See Chapter 3 for a complete function reference.
-    ...
-
+    Scroll down to the end to see a list of changes or new features.
     
-1.2 REQUIREMENTS    
+    
+1.2 REQUIREMENTS/NOTES
 
-    SiSeLi requires Scilab version 5.3+ and comes in 32 and 64 bit variants.
+    SiSeLi requires at least Scilab version 5.3+ and comes in 32 and 64 bit variants.
       
     Scilab does not run under Windows-2000 any more (*1*), so at least Windows XP is required.
 
-    Beside Windows and a running Scilab installation, nothing else should be required.
+    Beside Windows and a running Scilab installation, nothing else is required.
     
     Is it stable?
-    Well, as of version 5, Scilab itself is everything else but stable. Any other version
-    below V5.3.0 did not even work on my systems (and I really tried a lot of different
-    combinations!). Plot windows did not work, contiguous crashes... On some systems, I could
-    not even read the console... But 5.3.0-BETA4 really is a great improvement!
-    Usually, Scilab crashes before SiSeli does ;)
+    Yes. Usually, Scilab crashes before SiSeli does ;)
     
       NOTICE:
       All data transfer Scilab <-> SiSeLi is done with pointer arithmetic.
@@ -65,17 +65,13 @@
       http://www.bloodshed.net/devcpp.html
     or
       http://www.bloodshed.net/dev/    
-    Install and start to code ;)
     
     
 1.4 FUTURE DEVELOPMENT, TODO LIST:
 
-    This project (the usual side project of 84 others) just started.
-    I quickly hacked this together, but although it is working fine, it is not finished (10/2010).
+    - docs in Markdown notation
+    - ...
 
-      - implement packet receive methods
-      - ...
- 
     
 1.5 FILES IN THE DISTRIBUTION
 
@@ -255,10 +251,12 @@
       slFlush               Flushes the receive buffer and resets the overflow flag (if set)
       slReadArray           Reads up to 32 bytes of data from the buffer.
       slReadArrayN          Reads an arbitrary amount of data from the buffer.
-      slSendPacket          Sends a <DLE><STX><DATA/DLE><DLE><ETX> packet
-      slSetPacketStart      Allows configuration of the 2 "packet start" bytes; e.g. <0x10><0x02>
-      slSetPacketEnd        Allows configuration of the 2 "packet end" bytes; e.g. <0x10><0x03>
-      slSetPacketChar       Allows configuration of the "special character" byte; e.g. <0x10>
+      slSendPacket          Sends a <DLE><STX><DATA/DLE><DLE><ETX> packet.
+      slReadPacket          Reads a <DLE><STX><DATA/DLE><DLE><ETX> packet.
+      slCount‹acket         Counts the number of packets in the receive buffer.
+      slSetPacketStart      Allows configuration of the 2nd "packet start" bytes <STX>; e.g. <DLE><STX>
+      slSetPacketEnd        Allows configuration of the 2nd "packet end" bytes <ETX>; e.g.   <DLE><ETX>
+      slSetPacketChar       Allows configuration of the "special character" byte <DLE>; e.g. <DLE>
 
       
 3.2 LIST OF AVAILABLE VARIABLES
@@ -287,8 +285,10 @@
       <array>   = slReadArray(<handle>)
       <array>   = slReadArrayN(<handle>, <length>)
       <ret>     = slSendPacket(<handle>, <array>, <size>)
-      <ret>     = slSetPacketStart(<handle>, <array>)
-      <ret>     = slSetPacketEnd(<handle>, <array>)
+      <array>   = slReadPacket(<handle>, <size>)
+      <count>   = slCountPacket(<handle>)
+      <ret>     = slSetPacketStart(<handle>, <byte>)
+      <ret>     = slSetPacketEnd(<handle>, <byte>)
       <ret>     = slSetPacketChar(<handle>, <byte>)
 
       
@@ -377,7 +377,8 @@
         RETURNS:
           1     = OK
           0     = ERROR, <handle> invalid
-      
+
+          
 3.4.6 slUMount
       
       <ret>     = slUMount(<handle>)
@@ -396,7 +397,8 @@
         RETURNS:
           1     = OK, everything deleted
           0     = ERROR, something very strange happened (you better restart Scilab ;-)
-      
+
+          
 3.4.7 slCheck
 
       <ret>     = slCheck(<handle>, <port>)
@@ -660,9 +662,9 @@
         Packet start <PSTART>, packet end <PEND> and the special <DLE> character can be
         configured by:
         
-          slSetPacketStart()    // allows 2 bytes for packet start; range from 1..255 (0 skips)
-          slSetPacketEnd()      // allows 2 bytes for packet end;   range from 1..255 (0 skips)
-          slSetPacketChar()     // allows 1 bytes for "data link escape" character; range 1..255
+          slSetPacketStart()    // set <STX>; range from 0..255
+          slSetPacketEnd()      // set <ETX>; range from 0..255
+          slSetPacketChar()     // set <DLE>; range 0..255
           
         Example:
         
@@ -675,92 +677,107 @@
         Assuming that <PSTART> = <0x10><0x02>, <PEND> = <0x10><0x03> and <DLE> = <0x10>,
         the sent packet looks like this:
         
-          <0x10><0x02>< 14 >< 15 >< 16 >< 16 >< 17 >< 18 ><0x10><0x03>
+          <0x10> <0x02> < 14 > < 15 > < 16 > < 16 > < 17 > < 18 > <0x10> <0x03>
           
         In hexadecimal notation (notice that 16==0x10 ;-):
         
-          <0x10><0x02><0x0E><0x0F><0x10><0x10><0x11><0x12><0x10><0x03>
+          <0x10> <0x02> <0x0E> <0x0F> <0x10> <0x10> <0x11> <0x12> <0x10> <0x03>
           
-        In <array>, every character, that equals <DLE> ("packet character" or data link escape "DLE"),
-        is doubled. It can be set via slSetPacketChar().
+        In <array>, every character, that equals <DLE> ("packet character" or data link escape
+        "DLE"), is doubled. It can be set via slSetPacketChar().
 
         RETURNS:
           1     = OK
           0     = ERROR
 
           
-3.4.19 slSetPacketStart
+3.4.19 slReadPacket
 
-      <ret>     = slSetPacketStart(<handle>, <array>)
+      <array>   = slSendPacket(<handle>, <size>)
+
+        Reads a packet from the receive buffer and returns it as <array>.
+        All packet start and end markers, as well as the "packet character" <DLE> are removed.
+
+        The first byte of <array> determines the number of valid bytes that are following, the
+        rest of <array>, up to <size+1> is filled up with "-1".
+
+        If <size> is smaller than the packet in the receive buffer, the rest of the packet is
+        discarded.
+        
+        Example:
+
+          Assuming that <PSTART> = <0x10><0x02>, <PEND> = <0x10><0x03> and <DLE> = <0x10>
+          and the receive buffer contains
+
+            <0x34> <0x65> <0x10> <0x02> <0x01> <0x10> <0x10> <0x03> <0x04> <0x10> <0x03> <0x65>
+           |...ANYDATA...| PACKETSTART | DAT1 |  DLE DAT 2  | DAT3 | DAT4 | PACKET END  |...ANY
+            
+          slReadPacket(1, 30) will return:
+          
+            <0x04> <0x01> <0x10> <0x03> <0x04>
+           |AMOUNT| DAT1 | DAT2 | DAT3 | DAT4
+
+
+
+3.4.13 slCountPacket
+      
+      <count>   = slCountPacket(<handle>)
+      
+        Counts the number of packets available in the receive buffer, referenced by <handle>.
+        
+        RETURNS:
+          <count> = number of packets in receive buffer
+          <-1>    = a buffer overflow occured; you have to call slFlush() to reset it
+           
+
+          
+3.4.21 slSetPacketStart
+
+      <ret>     = slSetPacketStart(<handle>, <byte>)
       
         See slSendPacket() for a description of the packet sending mechanism.
-        Sets the 2 byte "packet start" string on the COM port referenced by <handle>, to
-        the content of <array>.
-        If a single byte should be used for "packet start", the second byte can be set
-        to "0" (zero), e.g. [16 0].
-        If "packet start" should not be used (e.g., you only need a packet end), call the
-        function with [0 0].
-        Notice: Size of <array> must always be at least 2!
+        Sets the 2nd byte of "packet start" string on the COM port referenced by <handle>, to
+        the content of <byte>.
         
         Examples:
         
           // Set packet start to <0x10><0x02> (the classic <DLE><STX>), on handle 1.
           // The raw data array [       14 15 16 17 18 19 ], 6 bytes,
           // will get sent as   [ 16 02 14 15 16 17 18 19 ], 8 bytes.
-          slSetPacketStart(1,[16 2])
-
-          // Set packet start to a single <255>, on handle 1.
-          // The raw data array [     14 15 16 17 18 19 ], 6 bytes,
-          // will get sent as   [ 255 14 15 16 17 18 19 ], 7 bytes.
-          slSetPacketStart(1,[255 0])
-
-          // Turn off packet start, on handle 1:
-          slSetPacketStart(1,[0 0])
+          slSetPacketStart(1, 2)
           
         RETURNS
           1     = OK
       
 
-3.4.20 slSetPacketEnd
+3.4.22 slSetPacketEnd
 
-      <ret>     = slSetPacketEnd(<handle>, <array>)
+      <ret>     = slSetPacketEnd(<handle>, <byte>)
       
         See slSendPacket() for a description of the packet sending mechanism.
-        Sets the 2 byte "packet end" string on the COM port referenced by <handle>, to
-        the content of <array>.
-        If a single byte should be used for "packet end", the second byte can be set
-        to "0" (zero), e.g. [16 0].
-        If "packet end" should not be used (e.g., you only need a packet start), call the
-        function with [0 0].
-        Notice: Size of <array> must always be at least 2!
+        Sets the 2nd byte of "packet end" string on the COM port referenced by <handle>, to
+        the content of <byte>.
         
         Examples:
         
           // Set packet end to <0x10><0x03> (the classic <DLE><ETX>), on handle 1.
           // The raw data array [ 14 15 16 17 18 19       ], 6 bytes,
           // will get sent as   [ 14 15 16 17 18 19 16 03 ], 8 bytes.
-          slSetPacketEnd(1,[16 3])
+          slSetPacketEnd(1, 3)
 
-          // Set packet end to a single <255>, on handle 1:
-          // The raw data array [ 14 15 16 17 18 19     ], 6 bytes,
-          // will get sent as   [ 14 15 16 17 18 19 255 ], 7 bytes.
-          slSetPacketEnd(1,[255 0])
-
-          // Turn off packet end, on handle 1:
-          slSetPacketEnd(1,[0 0])
-          
         RETURNS
           1     = OK
 
 
-3.4.21 slSetPacketChar
+3.4.23 slSetPacketChar
       
       <ret>     = slSetPacketChar(<handle>, <byte>)
       
         Sets the "special character", also known as the classic <DLE> (data link escape), for
         the communication with the COM port referenced by <handle>.
-        If <byte> is in the range 1..255, any data byte of the same value is doubled.
-        If <byte> is "0" (zero), the send string is sent unmodified.
+        If <byte> is in the range 0..255, any data byte of the same value is doubled.
+        As of SiSeLi V0.6, the special character is automatically used for packet start and
+        packet end (<DLE>).
         
         Examples:
 
@@ -770,9 +787,6 @@
           // will get sent as   [ 14 15 16 16 17 18 16 16 ], 8 bytes.
           slSetPacketChar(1,16)
           
-          // Turn usage of the special, repeating character off, on handle 1:
-          slSetPacketChar(1,0)
-          
         RETURNS:
           1     = OK
         
@@ -780,20 +794,26 @@
     
 9.0 CHANGES
 
-    V0.1,  initial release
+    V0.1, initial release
     
     V0.1a, mini-fix
       - *NEW* added slInit() function
     
-    V0.2,  next steps
+    V0.2, next steps
       - removed some debug lines
       - increased default RX buffer size to 30kB
 
-    V0.3,  never released
+    V0.3, never released
     
-    V0.4,  tiny add-on
+    V0.4, tiny add-on
       - *NEW* added slReadArrayN() function
 
-    V0.5,  baudrate upgrade, fix
+    V0.5, baudrate upgrade, fix
       - *NEW* added baudrates 256000, up to 3MBit/s
       - *FIX* error handling did not work for some functions; always reported "OK"
+
+    V0.6, implemented packet read stuff
+      - *NEW* added slReadPacket()
+      - *NEW* added slCountPacket()
+      - *CHG* reworked complete packet send/write algorithm
+      - *CHG* increased simultaneously usable serial ports to 16

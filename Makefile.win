@@ -4,7 +4,7 @@
 CPP  = g++.exe
 CC   = gcc.exe
 WINDRES = windres.exe
-RES  = 
+RES  = obj/ScilabSerialLib_private.res
 OBJ  = obj/siseli.o obj/asSerial.o $(RES)
 LINKOBJ  = obj/siseli.o obj/asSerial.o $(RES)
 LIBS =  -L"C:/WINDOWSPRG/DevCpp/lib" -L"lib" --no-export-all-symbols --add-stdcall-alias lib/Test_LIB.a  
@@ -35,3 +35,6 @@ obj/siseli.o: siseli.cpp
 
 obj/asSerial.o: asSerial.cpp
 	$(CPP) -c asSerial.cpp -o obj/asSerial.o $(CXXFLAGS)
+
+obj/ScilabSerialLib_private.res: ScilabSerialLib_private.rc 
+	$(WINDRES) -i ScilabSerialLib_private.rc --input-format=rc -o obj/ScilabSerialLib_private.res -O coff 
