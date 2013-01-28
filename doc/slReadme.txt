@@ -253,7 +253,7 @@
       slReadArrayN          Reads an arbitrary amount of data from the buffer.
       slSendPacket          Sends a <DLE><STX><DATA/DLE><DLE><ETX> packet.
       slReadPacket          Reads a <DLE><STX><DATA/DLE><DLE><ETX> packet.
-      slCount‹acket         Counts the number of packets in the receive buffer.
+      slCountPacket         Counts the number of packets in the receive buffer.
       slSetPacketStart      Allows configuration of the 2nd "packet start" bytes <STX>; e.g. <DLE><STX>
       slSetPacketEnd        Allows configuration of the 2nd "packet end" bytes <ETX>; e.g.   <DLE><ETX>
       slSetPacketChar       Allows configuration of the "special character" byte <DLE>; e.g. <DLE>
