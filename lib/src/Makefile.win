@@ -1,0 +1,37 @@
+# Project: Test_LIB
+# Makefile created by Dev-C++ 4.9.9.2
+
+CPP  = g++.exe
+CC   = gcc.exe
+WINDRES = windres.exe
+RES  = 
+OBJ  = Serial.o SerialEx.o SerialWnd.o $(RES)
+LINKOBJ  = Serial.o SerialEx.o SerialWnd.o $(RES)
+LIBS =  -L"C:/WINDOWSPRG/DevCpp/lib"  
+INCS =  -I"C:/WINDOWSPRG/DevCpp/include" 
+CXXINCS =  -I"C:/WINDOWSPRG/DevCpp/lib/gcc/mingw32/3.4.2/include"  -I"C:/WINDOWSPRG/DevCpp/include/c++/3.4.2/backward"  -I"C:/WINDOWSPRG/DevCpp/include/c++/3.4.2/mingw32"  -I"C:/WINDOWSPRG/DevCpp/include/c++/3.4.2"  -I"C:/WINDOWSPRG/DevCpp/include" 
+BIN  = Test_LIB.a
+CXXFLAGS = $(CXXINCS)   -fexpensive-optimizations -O2
+CFLAGS = $(INCS)   -fexpensive-optimizations -O2
+RM = rm -f
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before Test_LIB.a all-after
+
+
+clean: clean-custom
+	${RM} $(OBJ) $(BIN)
+
+$(BIN): $(LINKOBJ)
+	ar r $(BIN) $(LINKOBJ)
+	ranlib $(BIN)
+
+Serial.o: Serial.cpp
+	$(CPP) -c Serial.cpp -o Serial.o $(CXXFLAGS)
+
+SerialEx.o: SerialEx.cpp
+	$(CPP) -c SerialEx.cpp -o SerialEx.o $(CXXFLAGS)
+
+SerialWnd.o: SerialWnd.cpp
+	$(CPP) -c SerialWnd.cpp -o SerialWnd.o $(CXXFLAGS)

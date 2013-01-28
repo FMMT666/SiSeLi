@@ -316,17 +316,6 @@ DLLIMPORT void recva (int *handle, int *bytes)
 	if( cPort[ (*handle) - 1 ] == NULL )
 		return;
 
-	// DID I WRITE THAT? #1
-	// Seems so... *confused*
-		
-	// A maximum of 32 bytes will be returned.
-	// The first byte of the array is the amount of data written, the
-	// first data byte goes to *(byte+1).
-	// Invalid data (no byte to read) is set to "-1".
-	// Notice that the following may happen:
-  // 5 bytes in the buffer, the 6th access to RecVRawByte() returns "-1".
-  // Now, additional data arrives at, e.g., i==32...
-  
 	tmp = bytes++;
 
 	for( i=0; i < 32; i++ )
@@ -355,17 +344,6 @@ DLLIMPORT void recvan (int *handle, int *length, int *bytes)
 		return;
 	if( *length < 1 )
 		return;
-
-	// DID I WRITE THAT? #2
-	// Seems so... *confused*
-		
-	// A variable number of bytes will be returned.
-	// The first byte of the array is the amount of data written, the
-	// first data byte goes to *(byte+1).
-	// Invalid data (no byte to read) is set to "-1".
-	// Notice that the following may happen:
-  // 5 bytes in the buffer, the 6th access to RecVRawByte() returns "-1".
-  // Now, additional data arrives at, e.g., i==32...
   
 	tmp = bytes++;
 
@@ -398,10 +376,8 @@ DLLIMPORT void recvap (int *handle, int *length, int *bytes)
   
 	tmp = bytes++;
 
-	// TODO: This does not work and I have not the slightest clue why...
-//	memset( (int *)bytes, -1, *length );
-	for( i=0; i < *length; i++ )
-		*bytes++ = -1;
+	memset( (int *)bytes, 0xff, (*length) * sizeof(int) );
+
 	bytes = tmp;
 
 	*tmp = cPort[(*handle)-1]->RecvRawPacketByte( bytes, *length );

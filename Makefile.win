@@ -11,8 +11,8 @@ LIBS =  -L"C:/WINDOWSPRG/DevCpp/lib" -L"lib" --no-export-all-symbols --add-stdca
 INCS =  -I"C:/WINDOWSPRG/DevCpp/include"  -I"inc" 
 CXXINCS =  -I"C:/WINDOWSPRG/DevCpp/lib/gcc/mingw32/3.4.2/include"  -I"C:/WINDOWSPRG/DevCpp/include/c++/3.4.2/backward"  -I"C:/WINDOWSPRG/DevCpp/include/c++/3.4.2/mingw32"  -I"C:/WINDOWSPRG/DevCpp/include/c++/3.4.2"  -I"C:/WINDOWSPRG/DevCpp/include"  -I"inc" 
 BIN  = out/siseli.dll
-CXXFLAGS = $(CXXINCS) -DBUILDING_DLL=1  
-CFLAGS = $(INCS) -DBUILDING_DLL=1  
+CXXFLAGS = $(CXXINCS) -DBUILDING_DLL=1   -fexpensive-optimizations -O2
+CFLAGS = $(INCS) -DBUILDING_DLL=1   -fexpensive-optimizations -O2
 RM = rm -f
 
 .PHONY: all all-before all-after clean clean-custom

@@ -1,14 +1,19 @@
 SiSeLi
 ======
 
-A Serial Port library for [Scilab][1].
+A serial port library for [Scilab][1].
 
     FEATURES:
         - Supports all kinds of serial ports, including USB, Bluetooth or virtual connections.      
         - baud rates up to 3MBit/s
         - up to 16 simultaneous connections
-        - easy to use
+        - supports DLE sequenced packet mechanism
         - ...
+
+
+These sources come with all necessary project files for building a
+x86 DLL with either [Dev-C++][4] or [Orwell Dev-C++][5].
+
 
 For binaries, documentation and examples, go [this way][2].  
 As an alternative, some versions of this library is available
@@ -52,3 +57,5 @@ FMMT666(ASkr)
 [1]: http://www.scilab.org
 [2]: http://www.askrprojects.net/software/siseli/index.html
 [3]: http://atoms.scilab.org/toolboxes/siseli
+[4]: http://www.bloodshed.net/download.html
+[5]: http://orwelldevcpp.blogspot.de/
