@@ -1,6 +1,6 @@
 
 
-COMPORT = 38
+COMPORT = 18
 
 
 exec("slLoadLib.sci")

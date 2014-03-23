@@ -378,8 +378,6 @@ DLLIMPORT void recvap (int *handle, int *length, int *bytes)
 
 	memset( (int *)bytes, 0xff, (*length) * sizeof(int) );
 
-	bytes = tmp;
-
 	*tmp = cPort[(*handle)-1]->RecvRawPacketByte( bytes, *length );
 }
 
