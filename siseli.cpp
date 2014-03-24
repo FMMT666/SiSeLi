@@ -1,6 +1,6 @@
 //
 // siseli; ScilabSerialLibrary
-// FMMT666(ASkr), 2010, 2012, 2013; www askrprojects.net
+// FMMT666(ASkr), 2010, 2012, 2013, 2014; www askrprojects.net
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -23,6 +23,7 @@
 #include "asSerial.h"
 
 
+// TODO: replace by STL
 // I know, I know. Shut up... ;)
 static asSerial *cPort[ MAXPORTS ];
 
@@ -516,3 +517,5 @@ BOOL APIENTRY DllMain (HINSTANCE hInst, DWORD reason, LPVOID reserved)
 
 	return TRUE;
 }
+
+

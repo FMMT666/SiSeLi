@@ -1,6 +1,6 @@
 //
 // asSerial, a CSerial wrapper object (for Scilab)
-// FMMT666(ASkr), 2010, 2012, 2013; www askrprojects.net
+// FMMT666(ASkr), 2010, 2012, 2013, 2014; www askrprojects.net
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -79,6 +79,7 @@ class asSerial::Secret
 		int				packetEnd[2];					// packet end identifier (e.g.: 0x10,0x03)
 		int				packetChar;						// packet "special character" (e.g.: 0x10)
 
+		// TODO: replace by STL
 		// buffer stuff
 		int				RXBufWriteByte(int ch);
 		int				RXBufReadByte(int blocked);
@@ -100,7 +101,7 @@ class asSerial::Secret
 		
 		// port buffers and vars (internal)
 		void			RXBufInit();					
-		void			RXBufFill(char ch);		// writes new data to RX buffer
+		void			RXBufFill(char ch);			// writes new data to RX buffer
 		unsigned char RXBuf[BUF_RX_SIZE];	// RX ringbuffer (filled by thread)
 		unsigned char TXBuf[BUF_RX_SIZE]; // TX ringbuffer
 		volatile unsigned RXBufW;					// write buffer index
@@ -133,7 +134,7 @@ asSerial::Secret::Secret()
 
 	packetMode=			0;	// only for RX thread; TX can be used all the time
 	
-	// Those a nice, default values. Saves additional calls in Scilab (for me ;-)
+	// Those are nice, default values. Saves additional calls in Scilab (for me ;-)
 	packetChar=			0x10;
 	packetStart[0]=	packetChar;		// to reflect the new packet strategy (V06)
 	packetStart[1]=	0x02;

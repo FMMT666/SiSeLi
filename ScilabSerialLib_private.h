@@ -5,13 +5,13 @@
 #define SCILABSERIALLIB_PRIVATE_H
 
 /* VERSION DEFINITIONS */
-#define VER_STRING	"0.6.0.0"
+#define VER_STRING	"0.6.0.1"
 #define VER_MAJOR	0
 #define VER_MINOR	6
 #define VER_RELEASE	0
-#define VER_BUILD	0
+#define VER_BUILD	1
 #define COMPANY_NAME	"FMMT666(ASkr)"
-#define FILE_VERSION	""
+#define FILE_VERSION	"0.6.0.1"
 #define FILE_DESCRIPTION	""
 #define INTERNAL_NAME	""
 #define LEGAL_COPYRIGHT	""

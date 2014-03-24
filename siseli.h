@@ -1,6 +1,6 @@
 //
 // siseli; Scilab Serial Library
-// FMMT666(ASkr), 2010, 2012, 2013; www askrprojects.net
+// FMMT666(ASkr), 2010, 2012, 2013, 2014; www askrprojects.net
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -50,6 +50,7 @@
 
 #ifndef _SISELI_H_
 #define _SISELI_H_
+
 
 
 #if BUILDING_DLL

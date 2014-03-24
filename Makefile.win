@@ -1,31 +1,30 @@
 # Project: ScilabSerialLib
-# Makefile created by Dev-C++ 4.9.9.2
+# Makefile created by Dev-C++ 5.6.2
 
-CPP  = g++.exe
-CC   = gcc.exe
-WINDRES = windres.exe
-RES  = obj/ScilabSerialLib_private.res
-OBJ  = obj/siseli.o obj/asSerial.o $(RES)
+CPP      = g++.exe
+CC       = gcc.exe
+WINDRES  = windres.exe
+RES      = obj/ScilabSerialLib_private.res
+OBJ      = obj/siseli.o obj/asSerial.o $(RES)
 LINKOBJ  = obj/siseli.o obj/asSerial.o $(RES)
-LIBS =  -L"C:/WINDOWSPRG/DevCpp/lib" -L"lib" --no-export-all-symbols --add-stdcall-alias lib/Test_LIB.a  
-INCS =  -I"C:/WINDOWSPRG/DevCpp/include"  -I"inc" 
-CXXINCS =  -I"C:/WINDOWSPRG/DevCpp/lib/gcc/mingw32/3.4.2/include"  -I"C:/WINDOWSPRG/DevCpp/include/c++/3.4.2/backward"  -I"C:/WINDOWSPRG/DevCpp/include/c++/3.4.2/mingw32"  -I"C:/WINDOWSPRG/DevCpp/include/c++/3.4.2"  -I"C:/WINDOWSPRG/DevCpp/include"  -I"inc" 
-BIN  = out/siseli.dll
-CXXFLAGS = $(CXXINCS) -DBUILDING_DLL=1   -fexpensive-optimizations -O2
-CFLAGS = $(INCS) -DBUILDING_DLL=1   -fexpensive-optimizations -O2
-RM = rm -f
+LIBS     = -L"C:/Program Files (x86)/Dev-Cpp/MinGW64/lib32" -L"C:/Program Files (x86)/Dev-Cpp/MinGW64/x86_64-w64-mingw32/lib32" -static-libgcc -L"lib" --no-export-all-symbols --add-stdcall-alias lib/SerialCore_x86.a -m32 -m32
+INCS     = -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include" -I"inc"
+CXXINCS  = -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include/c++" -I"inc"
+BIN      = out/siseli_x86.dll
+CXXFLAGS = $(CXXINCS) -m32 -DBUILDING_DLL=1
+CFLAGS   = $(INCS) -m32 -DBUILDING_DLL=1
+RM       = rm.exe -f
 
 .PHONY: all all-before all-after clean clean-custom
 
-all: all-before out/siseli.dll all-after
-
+all: all-before $(BIN) all-after
 
 clean: clean-custom
 	${RM} $(OBJ) $(BIN)
 
-DLLWRAP=dllwrap.exe
-DEFFILE=out/libsiseli.def
-STATICLIB=out/libsiseli.a
+DLLWRAP   = dllwrap.exe
+DEFFILE   = out/libsiseli_x86.def
+STATICLIB = out/libsiseli_x86.a
 
 $(BIN): $(LINKOBJ)
 	$(DLLWRAP) --output-def $(DEFFILE) --driver-name c++ --implib $(STATICLIB) $(LINKOBJ) $(LIBS) -o $(BIN)
@@ -37,4 +36,4 @@ obj/asSerial.o: asSerial.cpp
 	$(CPP) -c asSerial.cpp -o obj/asSerial.o $(CXXFLAGS)
 
 obj/ScilabSerialLib_private.res: ScilabSerialLib_private.rc 
-	$(WINDRES) -i ScilabSerialLib_private.rc --input-format=rc -o obj/ScilabSerialLib_private.res -O coff 
+	$(WINDRES) -i ScilabSerialLib_private.rc -F pe-i386 --input-format=rc -o obj/ScilabSerialLib_private.res -O coff 

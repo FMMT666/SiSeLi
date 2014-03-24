@@ -1,23 +1,42 @@
 //
-// ScilabSerialLib (SiSeLi) DEMO, V0.2
-// ASkr, 10/2012
+// ScilabSerialLib (SiSeLi) DEMO, V0.3
+// ASkr, 10/2012, 03/2014
 // www.askrprojects.net
 //
-// Make sure you start this after doing a:
-//   exec("slLoadLib.sci")
-// Look out for ** CHANGE YOUR COM-PORT ** below and do so!
+//
+// READ THIS (PLEASE?)
+//
+//-----
+// 1) CHANGE YOUR COM-PORT HERE
+COMPORT = 5
+//
+//-----
+// 3) TYPE THIS IN YOUR SCILAB CONSOLE
+//      exec("slLoadLib.sci")
+//
+//-----
+// 4) CREATE A SERIAL LOOP
+//    Make an RX<->TX loop (connect them together)
+//    to receive the already sent bytes.
 //
 //
-// Make an RX<->TX loop (connect them together)
-// to receive the already sent bytes.
 //
 // NOTICE:
-// None of the function calls evaluates the return argument (OK/ERROR)!
-// Just a demo...
+//   This is just a demonstration...
+//   None of the function calls evaluates the return argument (OK/ERROR)!
+//   You can do better...
 //
+//
+//
+// CHANGES V0.3:
+//  - added a COM port variable
+//  - added some text
 //
 // CHANGES V0.2:
 //  - added new function "slReadArrayN()"
+//
+
+
 
 mode(1)
 
@@ -27,17 +46,14 @@ printf("SISELI Version %3.1f\n",slVersion());
 // mount library on handle "1"
 slMount(1);
 
-// **************************
-// ** CHANGE YOUR COM-PORT **
-// **************************
-// handle "1": check availability of COM29
-slCheck(1,29);
+// handle "1": check availability of specified COM port
+slCheck(1,COMPORT);
 
 // handle "1": configure port
 slConfig(1,19200,8,0,1);
 
 // handle "1": open port
-slOpen(1,29);
+slOpen(1,COMPORT);
 
 mode(2);
 
@@ -136,7 +152,6 @@ tmp=slReadArray(1);
 data=tmp(1,2:1+tmp(1));
 printf("We received: ");
 ascii(data)
-
 
 
 // *** NEW V0.2 *** slReadArrayN()

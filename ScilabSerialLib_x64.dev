@@ -1,9 +1,9 @@
 [Project]
-FileName=ScilabSerialLib.dev
+FileName=ScilabSerialLib_x64.dev
 Name=ScilabSerialLib
 UnitCount=3
 Type=3
-Ver=1
+Ver=2
 ObjFiles=
 Includes=inc
 Libs=lib
@@ -12,13 +12,13 @@ ResourceIncludes=
 MakeIncludes=
 Compiler=-DBUILDING_DLL=1_@@_
 CppCompiler=-DBUILDING_DLL=1_@@_
-Linker=--no-export-all-symbols --add-stdcall-alias_@@_lib/Test_LIB.a_@@_
+Linker=--no-export-all-symbols_@@_--add-stdcall-alias_@@_lib/SerialCore_x64.a_@@_
 IsCpp=1
 Icon=
 ExeOutput=out
 ObjectOutput=obj
 OverrideOutput=1
-OverrideOutputName=siseli.dll
+OverrideOutputName=siseli_x64.dll
 HostApplication=
 Folders=
 CommandLine=
@@ -27,7 +27,9 @@ CustomMakefile=
 IncludeVersionInfo=1
 SupportXPThemes=0
 CompilerSet=0
-CompilerSettings=0000000001010000000000
+CompilerSettings=0000000000000000000000000
+LogOutput=
+LogOutputEnabled=0
 
 [Unit2]
 FileName=siseli.h
@@ -53,11 +55,11 @@ BuildCmd=
 Major=0
 Minor=6
 Release=0
-Build=0
+Build=1
 LanguageID=2057
 CharsetID=1252
 CompanyName=FMMT666(ASkr)
-FileVersion=
+FileVersion=0.6.0.1
 FileDescription=
 InternalName=
 LegalCopyright=
@@ -66,6 +68,7 @@ OriginalFilename=
 ProductName=SiSeLi
 ProductVersion=V0.6
 AutoIncBuildNr=0
+SyncProduct=0
 
 [Unit3]
 FileName=asSerial.cpp

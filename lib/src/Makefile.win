@@ -1,24 +1,22 @@
-# Project: Test_LIB
-# Makefile created by Dev-C++ 4.9.9.2
+# Project: SerialCore
+# Makefile created by Dev-C++ 5.6.2
 
-CPP  = g++.exe
-CC   = gcc.exe
-WINDRES = windres.exe
-RES  = 
-OBJ  = Serial.o SerialEx.o SerialWnd.o $(RES)
-LINKOBJ  = Serial.o SerialEx.o SerialWnd.o $(RES)
-LIBS =  -L"C:/WINDOWSPRG/DevCpp/lib"  
-INCS =  -I"C:/WINDOWSPRG/DevCpp/include" 
-CXXINCS =  -I"C:/WINDOWSPRG/DevCpp/lib/gcc/mingw32/3.4.2/include"  -I"C:/WINDOWSPRG/DevCpp/include/c++/3.4.2/backward"  -I"C:/WINDOWSPRG/DevCpp/include/c++/3.4.2/mingw32"  -I"C:/WINDOWSPRG/DevCpp/include/c++/3.4.2"  -I"C:/WINDOWSPRG/DevCpp/include" 
-BIN  = Test_LIB.a
-CXXFLAGS = $(CXXINCS)   -fexpensive-optimizations -O2
-CFLAGS = $(INCS)   -fexpensive-optimizations -O2
-RM = rm -f
+CPP      = g++.exe
+CC       = gcc.exe
+WINDRES  = windres.exe
+OBJ      = Serial.o SerialEx.o SerialWnd.o
+LINKOBJ  = Serial.o SerialEx.o SerialWnd.o
+LIBS     = -L"C:/Program Files (x86)/Dev-Cpp/MinGW64/lib32" -L"C:/Program Files (x86)/Dev-Cpp/MinGW64/x86_64-w64-mingw32/lib32" -static-libgcc -m32
+INCS     = -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include"
+CXXINCS  = -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include/c++"
+BIN      = SerialCore_x86.a
+CXXFLAGS = $(CXXINCS) -m32
+CFLAGS   = $(INCS) -m32
+RM       = rm.exe -f
 
 .PHONY: all all-before all-after clean clean-custom
 
-all: all-before Test_LIB.a all-after
-
+all: all-before $(BIN) all-after
 
 clean: clean-custom
 	${RM} $(OBJ) $(BIN)
