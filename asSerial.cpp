@@ -23,8 +23,6 @@
 
 #include "asSerial.h"
 
-// Notice that the CSerial library is loaded as a library...
-// Modified source code can be found in the source/cserial directory (distributioon-ZIP)
 #include "Serial.h"
 
 // "private" defines
@@ -41,6 +39,25 @@
 
 #define CLOSED					0
 #define OPENED					1
+
+
+//
+// TODO:
+//   - replace manually handled buffer by STL container (see ***REFACBUF*** marks)
+//     As it seems, all changes will be transparent to the overlaying handling.
+//     possible pitfalls: "snif(f) buffer"
+//
+//   - get rid of all those C casts
+//
+//   - It should not be necessary to extract the buffer and create a new class,
+//     but it would be worth taking a closer look at this.
+//
+//   - add doxygen stuff
+//     
+//   - check if it's REALLY modular, this time...
+//
+//   - ...
+
 
 
 template <class T>
@@ -67,43 +84,44 @@ class asSerial::Secret
 		// the main serial interface
 		class CSerial serial;
 
+		// TOCHK: why are these public???
 		// port related variables
-		int				port;									// COM port 1-99
-		long			baudrate;							// 300-256000
-		int				bits;									// 5, 6, 7, 8
-		int				parity;								// NOPARITY, ODDPARITY, EVENPARITY
-		int				stop;									// NOSTOPBIT, ONE5STOPBITS, TWOSTOPBITS
+		int				port;										// COM port 1-99
+		long			baudrate;								// 300-3000000
+		int				bits;										// 5, 6, 7, 8
+		int				parity;									// NOPARITY, ODDPARITY, EVENPARITY
+		int				stop;										// NOSTOPBIT, ONE5STOPBITS, TWOSTOPBITS
 
-		int				packetMode;						// 1 enables packet mode (only valid for receiving data)
-		int				packetStart[2];				// packet start identifier (e.g.: 0x10,0x02)
-		int				packetEnd[2];					// packet end identifier (e.g.: 0x10,0x03)
-		int				packetChar;						// packet "special character" (e.g.: 0x10)
+		// TOCHK: why are these public???
+		// packet related variables
+		int				packetMode;							// 1 enables packet mode (only valid for receiving data)
+		int				packetStart[2];					// packet start identifier (e.g.: 0x10,0x02)
+		int				packetEnd[2];						// packet end identifier (e.g.: 0x10,0x03)
+		int				packetChar;							// packet "special character" (e.g.: 0x10)
 
-		// TODO: replace by STL
 		// buffer stuff
 		int				RXBufWriteByte(int ch);
 		int				RXBufReadByte(int blocked);
-		int				RXBufSnifByte();			// "read" byte without removing it from the buffer
-		void			RXBufSnifReset();			// resets the sniff pointer to the current read index
+		int				RXBufSnifByte();				// "read" byte without removing it from the buffer
+		void			RXBufSnifReset();				// resets the sniff pointer to the current read index
 		void			RXBufFlush();
-		int				RXBufCount();					// returns number of bytes in RX buffer; returns -1 on overflow
+		int				RXBufCount();						// returns number of bytes in RX buffer; returns -1 on overflow
 
 		// RX Thread
 		static DWORD WINAPI RXBufThread(LPVOID param);
-		HANDLE	RXBufThreadStart();		// TODO -> may be private?
-		void		RXBufThreadStop();		// TODO -> may be private?
-		HANDLE	RXBufThreadRunning;		// thread handle
-		bool		RXBufThreadFinish;		// thread-running marker
+		HANDLE	RXBufThreadStart();				// TODO -> may be private?
+		void		RXBufThreadStop();				// TODO -> may be private?
+		HANDLE	RXBufThreadHandle;				// thread handle
+		bool		RXBufThreadFinish;				// thread-running marker
 
 		// even more secret stuff ;)
 	private:
-		int				portState;								// port state
+		int				portState;							// port state
 		
 		// port buffers and vars (internal)
 		void			RXBufInit();					
-		void			RXBufFill(char ch);			// writes new data to RX buffer
+		void			RXBufFill(char ch);			// writes new data to RX buffer              ***REFACBUF***
 		unsigned char RXBuf[BUF_RX_SIZE];	// RX ringbuffer (filled by thread)
-		unsigned char TXBuf[BUF_RX_SIZE]; // TX ringbuffer
 		volatile unsigned RXBufW;					// write buffer index
 		volatile unsigned	RXBufR;					// read buffer index
 		volatile unsigned	RXBufC;					// number of bytes in buffer
@@ -127,26 +145,26 @@ class asSerial::Secret
 //************************************************************************************************
 asSerial::Secret::Secret()
 {
-	baudrate=	CSerial::EBaudrate(19200);
-	bits=			CSerial::EDataBits(8);
-	parity=		CSerial::EParity(NOPARITY);
-	stop=			CSerial::EStopBits(ONESTOPBIT);
+	baudrate = CSerial::EBaudrate(19200);
+	bits     = CSerial::EDataBits(8);
+	parity   = CSerial::EParity(NOPARITY);
+	stop     = CSerial::EStopBits(ONESTOPBIT);
 
-	packetMode=			0;	// only for RX thread; TX can be used all the time
+	packetMode = 0; // only for RX thread; TX can be used all the time
 	
 	// Those are nice, default values. Saves additional calls in Scilab (for me ;-)
-	packetChar=			0x10;
-	packetStart[0]=	packetChar;		// to reflect the new packet strategy (V06)
-	packetStart[1]=	0x02;
-	packetEnd[0]=		packetChar;		// to reflect the new packet strategy (V06)
-	packetEnd[1]=		0x03;
+	packetChar     = 0x10;
+	packetStart[0] = packetChar;		// to reflect the new packet strategy (V06)
+	packetStart[1] = 0x02;
+	packetEnd[0]   = packetChar;		// to reflect the new packet strategy (V06)
+	packetEnd[1]   = 0x03;
 
-	RXBufThreadRunning=NULL;
-	RXBufThreadFinish=true;
+	RXBufThreadHandle = NULL;
+	RXBufThreadFinish = true;
 
 	RXBufInit();
 	
-	portState=CLOSED;
+	portState = CLOSED;
 }
 
 
@@ -167,7 +185,7 @@ asSerial::Secret::~Secret()
 //***
 //***
 //************************************************************************************************
-DWORD WINAPI asSerial::Secret::RXBufThread(LPVOID param)
+DWORD WINAPI asSerial::Secret::RXBufThread( LPVOID param )
 {
 	int ch;
 	DWORD count;
@@ -178,20 +196,20 @@ DWORD WINAPI asSerial::Secret::RXBufThread(LPVOID param)
 	{
 		for(;;)
 		{
-			pt->serial.Read((int *)&ch,1,&count);
-			if(count)
-				pt->RXBufWriteByte(ch);
+			pt->serial.Read( (int *) &ch, 1, &count );
+			if( count )
+				pt->RXBufWriteByte( ch );
 			else
 				break;
 		}
 
 #ifdef TIME_RX_THREAD
-		Sleep(TIME_RX_THREAD);
+		Sleep( TIME_RX_THREAD );
 #endif
 		
-	}	while(!pt->RXBufThreadFinish);
+	}	while( !pt->RXBufThreadFinish );
 	
-	pt->RXBufThreadRunning=NULL;
+	pt->RXBufThreadHandle = NULL;
 }
 
 
@@ -205,8 +223,8 @@ DWORD WINAPI asSerial::Secret::RXBufThread(LPVOID param)
 HANDLE asSerial::Secret::RXBufThreadStart()
 {
 	// don't try this at home ;)
-	RXBufThreadFinish=false;
-	return (RXBufThreadRunning = CreateThread(NULL,0,&RXBufThread,static_cast<void*>(this),0,NULL));
+	RXBufThreadFinish = false;
+	return ( RXBufThreadHandle = CreateThread( NULL, 0, &RXBufThread, static_cast<void*>(this), 0, NULL) );
 }
 
 
@@ -219,7 +237,7 @@ HANDLE asSerial::Secret::RXBufThreadStart()
 void asSerial::Secret::RXBufThreadStop()
 {
 	// don't try this t home ;-)
-	RXBufThreadFinish=true;
+	RXBufThreadFinish = true;
 }
 
 
@@ -232,11 +250,16 @@ void asSerial::Secret::RXBufThreadStop()
 //************************************************************************************************
 void asSerial::Secret::RXBufInit()
 {
-	RXBufW=0;
-	RXBufR=0;
-	RXBufC=0;
-	RXBufO=0;
-	RXBufS=0;
+
+	// **************
+	// ***REFACBUF***
+	// **************
+	
+	RXBufW = 0;
+	RXBufR = 0;
+	RXBufC = 0;
+	RXBufO = 0;
+	RXBufS = 0;
 }
 
 
@@ -248,6 +271,11 @@ void asSerial::Secret::RXBufInit()
 //************************************************************************************************
 int asSerial::Secret::RXBufWriteByte(int ch)
 {
+	
+	// **************
+	// ***REFACBUF***
+	// **************
+	
 	// if an overflow already occured, do nothing
 	if(RXBufO)
  		return 0;
@@ -279,6 +307,12 @@ int asSerial::Secret::RXBufWriteByte(int ch)
 //************************************************************************************************
 int asSerial::Secret::RXBufReadByte(int blocked)
 {
+	
+	// **************
+	// ***REFACBUF***
+	// **************
+
+	
 	if(blocked==BLOCKING)
 	{
 		while (RXBufW == RXBufR)
@@ -311,6 +345,12 @@ int asSerial::Secret::RXBufReadByte(int blocked)
 //************************************************************************************************
 int asSerial::Secret::RXBufSnifByte()
 {
+	
+	// **************
+	// ***REFACBUF***
+	// **************
+	
+	
 	if(RXBufW == RXBufS)
 		return -1;
 	
@@ -329,6 +369,11 @@ int asSerial::Secret::RXBufSnifByte()
 //************************************************************************************************
 void asSerial::Secret::RXBufSnifReset()
 {
+	
+	// **************
+	// ***REFACBUF***
+	// **************
+	
 	RXBufS=RXBufR;
 }
 
@@ -353,6 +398,11 @@ void asSerial::Secret::RXBufFlush()
 //************************************************************************************************
 int asSerial::Secret::RXBufCount()
 {
+	
+	// **************
+	// ***REFACBUF***
+	// **************
+	
 	if(RXBufO)
 		return -1;	// overflow
 	else
