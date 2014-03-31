@@ -1,13 +1,14 @@
 mode(0)  // echo off
 // #############################
-// ### SCILAB LIBRARY LOADER ### V1.1
+// ### SCILAB LIBRARY LOADER ### V2.0
 // #############################
 //
 // ScilabSerialLib (SiSeLi)
-// ASkr, 2010, 2012
+// ASkr, 2010, 2012, 2014
 // www.askrprojects.net
 //
 // Loads ScilabSerialLib into Scilab memory and creates DLL access wrapper functions.
+// Requires SiSeLi V0.7+
 //
 // NOTICE:
 //  ---------------------------------------------
@@ -34,9 +35,13 @@ mode(0)  // echo off
 //      - slSetPacketChar()
 //    They use only >>1<< character, now (see documentation)
 //
+// CHANGES V2.0, 04/2014:
+//  - changed "slMount()" behaviour (no argument by default, but remain compatibility)
+//  - changed "slReadByte()" behaviour (2nd argument not required; NONBLOCKING by default)
+// 
 
 
-SLLOADERVERSION = "1.0";
+SLLOADERVERSION = "2.0";
 
 
 // check if lib is already loaded
@@ -128,7 +133,14 @@ endfunction
 //*** slMount
 //*****************************************************************************
 function res=slMount(nHandle)
-    res=fort("mount",nHandle,1,"i","out",[1,1],2,"i")
+    // New behaviour (4/2014) does not require an argument, but
+    // we remain compatible...
+    if exists('nHandle','l') then
+        printf("WARNING: Calling slMount() with argument is deprecated.\n")
+        res=fort("mount",nHandle,1,"i","out",[1,1],2,"i")
+    else
+        res=fort("mount",0,      1,"i","out",[1,1],2,"i")
+    end
 endfunction
 
 
@@ -208,7 +220,11 @@ endfunction
 //*** slReadByte
 //*****************************************************************************
 function res=slReadByte(nHandle, nBlock)
-    res=fort("recvb",nHandle,1,"i",nBlock,2,"i","out",[1,1],3,"i")
+    if exists('nBlock','l') then
+        res=fort("recvb",nHandle,1,"i",nBlock,2,"i","out",[1,1],3,"i")
+    else
+        res=fort("recvb",nHandle,1,"i",0     ,2,"i","out",[1,1],3,"i")
+    end
 endfunction
 
 
@@ -298,7 +314,7 @@ endfunction
 slLoad();
 
 if mtlb_exist("slVersion") then
-    printf("\n\nSISELI Version %3.1f loaded\n---\n",slVersion());
+    printf("\n\nSISELI Version %3.1f loaded\n---\n", slVersion() );
 else
     printf("\nERROR: Unable to load library\n---\n")
     abort;

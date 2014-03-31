@@ -1,7 +1,7 @@
 [Project]
 FileName=ScilabSerialLib_x64.dev
 Name=ScilabSerialLib
-UnitCount=3
+UnitCount=4
 Type=3
 Ver=2
 ObjFiles=
@@ -10,8 +10,8 @@ Libs=lib
 PrivateResource=ScilabSerialLib_private.rc
 ResourceIncludes=
 MakeIncludes=
-Compiler=-DBUILDING_DLL=1_@@_
-CppCompiler=-DBUILDING_DLL=1_@@_
+Compiler=-DBUILDING_DLL=1_@@__@@_
+CppCompiler=-DBUILDING_DLL=1_@@__@@_
 Linker=--no-export-all-symbols_@@_--add-stdcall-alias_@@_lib/SerialCore_x64.a_@@_
 IsCpp=1
 Icon=
@@ -27,7 +27,7 @@ CustomMakefile=
 IncludeVersionInfo=1
 SupportXPThemes=0
 CompilerSet=0
-CompilerSettings=0000000000000000000000000
+CompilerSettings=0000000ag0000000000000000
 LogOutput=
 LogOutputEnabled=0
 
@@ -72,6 +72,16 @@ SyncProduct=0
 
 [Unit3]
 FileName=asSerial.cpp
+CompileCpp=1
+Folder=ScilabSerialLib
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit4]
+FileName=asSerial.h
 CompileCpp=1
 Folder=ScilabSerialLib
 Compile=1

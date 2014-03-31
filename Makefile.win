@@ -7,12 +7,12 @@ WINDRES  = windres.exe
 RES      = obj/ScilabSerialLib_private.res
 OBJ      = obj/siseli.o obj/asSerial.o $(RES)
 LINKOBJ  = obj/siseli.o obj/asSerial.o $(RES)
-LIBS     = -L"C:/Program Files (x86)/Dev-Cpp/MinGW64/lib32" -L"C:/Program Files (x86)/Dev-Cpp/MinGW64/x86_64-w64-mingw32/lib32" -static-libgcc -L"lib" --no-export-all-symbols --add-stdcall-alias lib/SerialCore_x86.a -m32 -m32
+LIBS     = -L"C:/Program Files (x86)/Dev-Cpp/MinGW64/lib" -L"C:/Program Files (x86)/Dev-Cpp/MinGW64/x86_64-w64-mingw32/lib" -static-libgcc -L"lib" --no-export-all-symbols --add-stdcall-alias lib/SerialCore_x64.a -m64
 INCS     = -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include" -I"inc"
 CXXINCS  = -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include/c++" -I"inc"
-BIN      = out/siseli_x86.dll
-CXXFLAGS = $(CXXINCS) -m32 -DBUILDING_DLL=1
-CFLAGS   = $(INCS) -m32 -DBUILDING_DLL=1
+BIN      = out/siseli_x64.dll
+CXXFLAGS = $(CXXINCS) -m64 -std=gnu++11 -DBUILDING_DLL=1
+CFLAGS   = $(INCS) -m64 -std=gnu++11 -DBUILDING_DLL=1
 RM       = rm.exe -f
 
 .PHONY: all all-before all-after clean clean-custom
@@ -23,8 +23,8 @@ clean: clean-custom
 	${RM} $(OBJ) $(BIN)
 
 DLLWRAP   = dllwrap.exe
-DEFFILE   = out/libsiseli_x86.def
-STATICLIB = out/libsiseli_x86.a
+DEFFILE   = out/libsiseli_x64.def
+STATICLIB = out/libsiseli_x64.a
 
 $(BIN): $(LINKOBJ)
 	$(DLLWRAP) --output-def $(DEFFILE) --driver-name c++ --implib $(STATICLIB) $(LINKOBJ) $(LIBS) -o $(BIN)
@@ -36,4 +36,4 @@ obj/asSerial.o: asSerial.cpp
 	$(CPP) -c asSerial.cpp -o obj/asSerial.o $(CXXFLAGS)
 
 obj/ScilabSerialLib_private.res: ScilabSerialLib_private.rc 
-	$(WINDRES) -i ScilabSerialLib_private.rc -F pe-i386 --input-format=rc -o obj/ScilabSerialLib_private.res -O coff 
+	$(WINDRES) -i ScilabSerialLib_private.rc --input-format=rc -o obj/ScilabSerialLib_private.res -O coff 

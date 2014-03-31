@@ -1,8 +1,8 @@
 
-  ScilabSerialLib (SiSeLi) Mini Documentation, V0.6
+  ScilabSerialLib (SiSeLi) Mini Documentation, V0.7
  ===================================================
   Serial Port library for Scilab (Windoze).
-  (c)ASkr, 10/2010 .. 02/2013
+  (c)ASkr, 10/2010 .. 04/2014
   www.askrprojects.net
 
   
@@ -29,8 +29,6 @@
 1.2 REQUIREMENTS/NOTES
 
     SiSeLi requires at least Scilab version 5.3+ and comes in 32 and 64 bit variants.
-      
-    Scilab does not run under Windows-2000 any more (*1*), so at least Windows XP is required.
 
     Beside Windows and a running Scilab installation, nothing else is required.
     
@@ -55,8 +53,6 @@
     get the right COM port number...) it will cause no (known) problems...
     I tested it with several FTDIs, several off-the-shelf USB <-> RS-232 converters, a few
     mobile phones and a pbLualized Lego NXT.
-      
-    (*1*) 5.3.0-BETA4 installation message box: "At least Windows NT5.1 is required to run Scilab".
 
     
 1.3 DEVELOPMENT ENVIRONMENT
@@ -108,67 +104,74 @@
       by the message that gets print out on the console.
 
     - Create a handle by mounting a port. A handle can be regarded as a reference number of an
-      interface. By default, SiSeLi supports up to 8 interfaces.
+      interface. SiSeLi supports an unlimited amount of interfaces.
       
-        ret = slMount(1)
+        port1 = slMount()
       
-      Remember that number. From now on, every function call of the SiSeLi DLL wrapper functions
-      require this number as an argument.
-      Calling "slMount(n)" is once required before doing anything else. It internally creates
+      NOTICE:
+        As of V0.7 (04/2014), slMount() does not require an argument (handle) any more.
+        Just call it and it will return the handle.
+        For compatibility reasons you still can call it with a parameter, but this is
+        not recommended.
+      
+      Remember that number in "port1". From now on, every function call of the SiSeLi DLL wrapper
+      functions require this number as an argument.
+      Calling "slMount()" is once required before doing anything else. It internally creates
       all necessary objects an dependencies.
 
-      Valid handles are n=1..8. If the mount succeeded, "slMount()" returns "1". In case
-      of an error, "0" is returned.
+      If everything went fine, a number >0 is returned.
+      In case of an error, 0 is returned.
 
     - Check if a serial port is available (COM x):
       
-        ret = slCheck(1,5)
+        ret = slCheck(port1,5)
       
       The first number is the handle, the second one specifies the number of the COM port.
       If COM5 is availabe and free, the function returns "1", otherwise "0" is returned.
     
     - Set COMM parameters:
     
-        ret = slConfig(1,19200,8,0,1)
+        ret = slConfig(port1,19200,8,0,1)
       
-      On handle "1" (first arg), use "19200" baud, "8" data bits, "0" no parity and "1" stop bit.
-      If everything went right, "1" is returned, "0" otherwise.
+      On handle "port1" (first arg), use "19200" baud, "8" data bits, "0" no parity and
+      "1" stop bit. If everything went right, "1" is returned, "0" otherwise.
       Notice that there is no COM port argument!
       
     - Open port:
     
-        ret = slOpen(1,5)
+        ret = slOpen(port1,5)
         
-      On handle "1", open "COM5". If successful, guess what, a "1" is returned ("0" on error).
+      On handle "port1", open "COM5". If successful, guess what, a "1" is returned ("0" on error).
       From now on, your serial interface is ready to send and receive data.
     
     - Sending a byte/character:
     
-        ret = slSendByte(1,65)
-        ret = slSendByte(1,ascii('A'))
+        ret = slSendByte(port1,65)
+        ret = slSendByte(port1,ascii('A'))
         
-      On handle "1", both functions send an "A" out to the port ("ascii('A')" returns 65 too).
+      On handle "port1", both functions send an "A" out to the port ("ascii('A')" returns 65 too).
       Notice that this function is not limited to ASCII characters. Every value 0..255 is
       supported.
       As from here on, I skip commenting the value of the return arguments...
       I guess you got the clue ;)
 
-    - Sending an array (2D):
+    - Sending an array (1D/2D):
 
-        ret = slSendArray(1,a(1,:),size(a,2));
-        ret = slSendArray(1,a(:,1),size(a,1));
-        ret = slSendArray(1,a,length(a));
-        ret = slSendArray(1,a',length(a));
+        ret = slSendArray(port1,a,length(a));
+        ret = slSendArray(port1,a',length(a));
+        ret = slSendArray(port1,a(1,:),size(a,2));
+        ret = slSendArray(port1,a(:,1),size(a,1));
 
       Assuming that "a" is an integer array of size(n,m), it can be sent as written above.
-      First argument "1" is the handle, the second "a" an array (even an array of size [1,1]),
+      First argument "port1" is the handle, the second "a" an array (even an array of size [1,1]),
       the third and last one is the size of the array.
-      NOTICE: It is extremly important that the given size DOES NOT EXCEED the length of
+      
+      NOTICE: It is extremely important that the given size DOES NOT EXCEED the length of
       the array (smaller values are OK). Otherwise memory exceptions will occur.
 
     - Checking bytes in the (receiving) buffer:
     
-        bytes = slCount(1)
+        bytes = slCount(port1)
 
       This function returns the number of bytes available in the receive buffer.
       Internally, a thread receives and stores all incoming data bytes. If you (or Scilab)
@@ -178,13 +181,14 @@
       
     - Receiving a byte (Actually: reading it from the internal buffer):
     
-        databyte = slReadByte(1,0)   // NON-BLOCKING (returns immediately)
-        databyte = slReadByte(1,1)   // BLOCKING     (waits until a byte was received)
+        databyte = slReadByte(port1)     // NON-BLOCKING (returns immediately)
+        databyte = slReadByte(port1,0)   // NON-BLOCKING (returns immediately, same as above)
+        databyte = slReadByte(port1,1)   // BLOCKING     (waits until a byte was received)
 
       If anything is in the receiving buffer, slReadbyte() returns one byte of that data,
-      here on handle "1". If the second argument is "0", the function returns immediatley,
-      even if the buffer is empty. A "1" as a second argument waits until at least one byte
-      is received, it "blocks".
+      here on handle "port1". If the second argument is "0" or skipped, the function returns
+      immediately, even if the buffer is empty. A "1" as a second argument waits until at least
+      one byte is received. It "blocks".
       slReadByte returns either a valid data byte (value 0..255) or "-1" if the receive
       buffer is empty, an overflow occurs or the port is not opened.
       Notice that "BLOCKING" really blocks. Scilab will do absolutely nothing until a byte
@@ -192,15 +196,15 @@
 
     - Closing the COM port:
     
-        ret = slClose(1);
+        ret = slClose(port1);
       
       After this call, the COM port is closed. You can not send or receive data anymore,
-      but the handle is still valid for, e.g. slConfig(), which still allows chaning
+      but the handle is still valid for, e.g. slConfig(), which still allows changing
       communication parameters, slOpen(), to re-open the port, etc...
       
     - Unmount handle:
     
-        ret = slUMount(1)
+        ret = slUMount(port1)
     
       slUMount() frees the internal objects and dependecies. From now on, any access to this
       former handle is invalid, but the library is still loaded and ready to run.
@@ -214,18 +218,7 @@
       exec("slLoadLib.sci") again.
       Do NOT call unload until the port is closed and unmounted!
 
-      *NOTICE*:
-      Due to some unresolved problems in Scilab, the wrapper functions ("sl...") can not
-      be removed that easily (Scilab becomes unstable).
-      So a call to, e.g. slCount() will still try to access "count" in the DLL,
-      
-        function res=slCount(nHandle)
-          res=fort("count",nHandle,1,"i","out",[1,1],2,"i")
-        endfunction
-        
-      which will obviously fail...
 
-      
     
 3.0 WRAPPER FUNCTIONS AND VARIABLES
 
@@ -238,7 +231,7 @@
       slInit                *SEE REF* Initializes some internal objects.     Also in "slLoadLib.sci"!
       slVersion             Returns the version of the library.
       slUnload              Unload the library.
-      slMount               Creates a handle to a COM port and initializes internal objects.
+      slMount               Returns a handle to a COM port and initializes internal objects.
       slUMount              Deletes the handle and frees internal objects.
       slCheck               Check availability of a COM port.
       slConfig              Configure a COM port (baudrate, databits, parity and stop bits).
@@ -271,7 +264,8 @@
       <ret>     = slInit()
       <version> = slVersion(<handle>)
       <ret>     = slUnload()
-      <ret>     = slMount(<handle>)
+      <handle>  = slMount()
+      <handle>  = slMount(<handle>) *** DEPRECATED ***
       <ret>     = slUMount(<handle>)
       <ret>     = slCheck(<handle>, <port>)
       <ret>     = slConfig(<handle>, <baud>, <databits>, <parity>, <stopbits>)
@@ -280,6 +274,7 @@
       <ret>     = slSendByte(<handle>, <byte>)
       <ret>     = slSendArray(<handle>, <array>, <size>)
       <count>   = slCount(<handle>)
+      <byte>    = slReadByte(<handle>)
       <byte>    = slReadByte(<handle>,<blocking>)
       <ret>     = slFlush(<handle>)
       <array>   = slReadArray(<handle>)
@@ -359,24 +354,29 @@
      
 3.4.5 slMount
       
-      <ret>     = slMount(<handle>)
+      <handle>  = slMount()
+      <handle>  = slMount(<handle>) *** DEPRECATED ***
       
         Creates internal objects and dependencies. Needs to be called once, before anything else.
-        <handle> is a 1..8 integer and can be regarded as a reference to exactly "this" (<handle>)
-        COM port. This way, different COM ports, that are opened the same time, can be
-        easily distimguished.
+        The returned value <handle> is an integer number and references the selected COMM port.
+        This way, different COM ports, that are opened the same time, can be easily distinguished.
+        
+        As of V0.7, slMount() does not need to get called with an argument.
+        To remain compatibility, the old function is still available, but its usage
+        is not recommended.
         
         Example:
         
           // You already executed "exec('slLoadLib.sci')" to load the library.
-          // You decide to use handle 3 for a COM port (which may be opened later):
-          slMount(3)
-          // From now on, all the internal objects, necessary for operation, are created
+          // Execute or type
+          handle = slMount()
+          // From now on, all the internal objects, necessary for operation, are available
           // and you can start to use the library functions.
+          // Remember the "handle", as this is the reference to the comm port(s).
         
         RETURNS:
-          1     = OK
-          0     = ERROR, <handle> invalid
+         >0     = a number (handle) to identify the selected COMM port
+          0     = ERROR
 
           
 3.4.6 slUMount
@@ -407,9 +407,9 @@
         
         Example:
         
-          // create handle 1 and check if COM4 is present and free:
-          slMount(1)
-          if slCheck(1,4) then
+          // get a handle and check if COM4 is present and free:
+          handle = slMount()
+          if slCheck(handle,4) then
             printf("Port 4 available\n")
           else
             printf("Port over board!\n")
@@ -433,8 +433,8 @@
         
         Example:
         
-          // Configure handle 1 to 4800 bits/s, 8 databits, no parity, one stop bit:
-          slConfig(1, 4800, 8, 0, 1)
+          // Configure handle "port1" to 4800 bits/s, 8 databits, no parity, one stop bit:
+          slConfig(port1, 4800, 8, 0, 1)
           
         Supported baudrates:
           300, 600,	1200,	2400,	4800,	9600,	14400, 19200, 38400, 56000, 57600, 115200,
@@ -456,12 +456,12 @@
           
           // example sequence, e.g. after calling "exec('slloadlib.sci')".
           // Notice: No checks done!
-          // create a handle (1)
-          slMount(1)
+          // get a handle
+          handle = slMount()
           // configure it (115k2, 7O1)
-          slConfig(1, 115200, 7, 1, 1)
-          // open COM4 on handle 1
-          slOpen(1,4)
+          slConfig(handle, 115200, 7, 1, 1)
+          // open COM4 on this port
+          slOpen(handle,4)
         
         RETURNS:
           1     = OK
@@ -492,8 +492,8 @@
 
         Example:
         
-          // send an "A" to the port, referenced by handle 1:
-          slSendByte(1,ascii("A"))
+          // send an "A" to the port, referenced by handle "port1":
+          slSendByte(port1,ascii("A"))
           
         RETURNS:
           1     = OK
@@ -521,12 +521,12 @@
 
         Example:
         
-          // send "BLOED" to the port, referenced by handle 1:
-          slSendArray(1, ascii("BLOED"), 5)
+          // send "BLOED" to the port, referenced by handle "port1":
+          slSendArray(port1, ascii("BLOED"), 5)
           
-          // send an array of integers to the port, referenced by handle 1:
+          // send an array of integers to the port, referenced by handle "port1":
           a=[68 79 79 70]
-          slSendArray(1, a, length(a))
+          slSendArray(port1, a, length(a))
             
         RETURNS:
           1     = OK
@@ -541,18 +541,23 @@
         
         RETURNS:
           <count> = number of bytes in receive buffer
-          <-1>    = a buffer overflow occured; you have to call slFlush() to reset it
+          <-1>    = A buffer overflow occurred. You have to call slFlush() to reset it.
+                    Also returned if called with an invalid handle.
+          
           
           
 3.4.14 slReadByte
-          
+
+      <byte>    = slReadByte(<handle>)
       <byte>    = slReadByte(<handle>,<blocking>)
       
         Reads (and removes) a byte from the receive buffer, referenced by <handle>.
-        The <blocking> parameter specifies its behaviour:
-        
+        The <blocking> parameter, if given, specifies its behaviour:
+
+             empty      -> the function always returns immediately
           <blocking=0>  -> the function always returns immediately
-          <blocking=1>  -> the functions waits (blocks all) untila at least one byte is available
+          <blocking=1>  -> the functions waits (blocks all) until at least one byte is available
+          
         
         RETURNS:
           <byte>  = a received byte
@@ -587,6 +592,10 @@
 
           index:   1   2   3   4   5   6   7   8      33
           content: 5, 65, 66, 67, 68, 69, -1, -1, ... -1
+          
+        WARNING:
+          Calling slReadArray() with an invalid handle may return garbage at index 2..33.
+          The first byte will contain a valid "0" though...
         
         Example usage in Scilab:
 
@@ -616,7 +625,7 @@
         By popular demand:
         This function behaves exactly like "slReadArray" above, except it takes a second
         argument which specifies the length of data to read.
-        
+
         <length> must be >1 and <31000.
         
         Size of <array> is at least <length+1>.
@@ -634,6 +643,10 @@
 
           index:   1   2   3   4   5   6   7   8     1001
           content: 5, 65, 66, 67, 68, 69, -1, -1, ... -1
+          
+        WARNING:
+          Calling slReadArray() with an invalid handle may return garbage after index 1.
+          The first byte will contain a valid "0" though...
           
         RETURNS
           <array> = [ <N> <data1> <data2> ... <dataN> ]
@@ -671,8 +684,8 @@
           // our array, that needs to be sent
           a = [14 15 16 17 18]
           
-          // send it to handle 1
-          slSendPacket(1, a, length(a))
+          // send it to handle "port1"
+          slSendPacket(port1, a, length(a))
 
         Assuming that <PSTART> = <0x10><0x02>, <PEND> = <0x10><0x03> and <DLE> = <0x10>,
         the sent packet looks like this:
@@ -741,10 +754,10 @@
         
         Examples:
         
-          // Set packet start to <0x10><0x02> (the classic <DLE><STX>), on handle 1.
+          // Set packet start to <0x10><0x02> (the classic <DLE><STX>), on handle "port1".
           // The raw data array [       14 15 16 17 18 19 ], 6 bytes,
           // will get sent as   [ 16 02 14 15 16 17 18 19 ], 8 bytes.
-          slSetPacketStart(1, 2)
+          slSetPacketStart(port1, 2)
           
         RETURNS
           1     = OK
@@ -760,10 +773,10 @@
         
         Examples:
         
-          // Set packet end to <0x10><0x03> (the classic <DLE><ETX>), on handle 1.
+          // Set packet end to <0x10><0x03> (the classic <DLE><ETX>), on handle "port1".
           // The raw data array [ 14 15 16 17 18 19       ], 6 bytes,
           // will get sent as   [ 14 15 16 17 18 19 16 03 ], 8 bytes.
-          slSetPacketEnd(1, 3)
+          slSetPacketEnd(port1, 3)
 
         RETURNS
           1     = OK
@@ -781,11 +794,11 @@
         
         Examples:
 
-          // Use classic <DLE> (0x10) during transmission on handle 1:
+          // Use classic <DLE> (0x10) during transmission on handle "port1":
           // After the call, every data byte, with a value of "16" will be doubled:
           // The raw data array [ 14 15 16    17 18 16    ], 6 bytes,
           // will get sent as   [ 14 15 16 16 17 18 16 16 ], 8 bytes.
-          slSetPacketChar(1,16)
+          slSetPacketChar(port1,16)
           
         RETURNS:
           1     = OK
@@ -800,10 +813,11 @@
       - *NEW* added slInit() function
     
     V0.2, next steps
-      - removed some debug lines
-      - increased default RX buffer size to 30kB
+      - *FIX* removed some debug lines
+      - *CHG* increased default RX buffer size to 30kB
 
     V0.3, never released
+      - *NOP* bummer
     
     V0.4, tiny add-on
       - *NEW* added slReadArrayN() function
@@ -817,3 +831,9 @@
       - *NEW* added slCountPacket()
       - *CHG* reworked complete packet send/write algorithm
       - *CHG* increased simultaneously usable serial ports to 16
+
+    V0.7, refactoring
+      - *NEW* started to remove old C-style stuff
+      - *NEW* unlimited amount of serial ports (previously limited to 16)
+      - *CHG* slMount() does not require the handle argument any longer.
+      - *CHG* slReadByte() does not require the 2nd argument if NONBLOCKING

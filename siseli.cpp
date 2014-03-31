@@ -22,34 +22,36 @@
 
 #include "asSerial.h"
 
+#include <map>
 
-// TODO: replace by STL
-// I know, I know. Shut up... ;)
-static asSerial *cPort[ MAXPORTS ];
+
+using namespace std;
+
+
+// A Container for the <asSerial> classes.
+// Numbering starts at 1 (equal to the Scilab handles)
+static map<int,asSerial*> mPort;
 
 
 
 //************************************************************************************************
-//***
-//***
+//*** init()
+//*** Called by Scilab's slInit()
 //***
 //************************************************************************************************
-DLLIMPORT void init(int *OK)
+DLLIMPORT void init( int *OK )
 {
-	int i;
-	for(i=0;i<MAXPORTS;i++)
-		cPort[i]=NULL;
-	*OK=1;
+	*OK = 1;
 }
 
 
 
 //************************************************************************************************
-//***
-//***
+//*** version()
+//*** Called by Scilab's slVersion()
 //***
 //************************************************************************************************
-DLLIMPORT void version(int *version)
+DLLIMPORT void version( int *version )
 {
 	*version = SISELI_VER;
 }
@@ -57,443 +59,487 @@ DLLIMPORT void version(int *version)
 
 
 //************************************************************************************************
-//***
-//***
+//*** mount()
+//*** Called by Scilab's slMount()
 //***
 //************************************************************************************************
-DLLIMPORT void mount (int *handle, int *OK)
+DLLIMPORT void mount ( int *handle, int *OK )
 {
-	*OK=0;
+	*OK = 0;
 	
-	if( (*handle<1)||(*handle>MAXPORTS))
-		return;
+	// In the past, the <handle>, given by the Scilab call, created exactly this handle and
+	// returned 1 to <OK> if everything went fine (0 otherwise).
+	// Now, we return either 0, on failure or the number of the handle created or
+	// any number >0, representing the handle itself.
+	// Notice that there is _no_ (practical) limit to the amount of handles serial interface
+	// classes ano more. The code limit is set to 32000 8-)
+
+	// New behaviour, 4/2014: find next free number (the hard way, for now ;-) and
+	// return it as the new handle.
+	// For compatibility, we first check if the requested handle number (if any)
+	// is available...
 	
-	if(cPort[(*handle)-1]==NULL)
+	if(  ( *handle != 0 ) && ( mPort.find( *handle ) == mPort.end() )  )
 	{
-		class asSerial *pas = new asSerial;
-		cPort[(*handle)-1]=pas;
-		if(pas==NULL)
+		// compatibility mode; check if requested handle is available
+		mPort.emplace( make_pair( *handle, new asSerial() ) );
+		*OK = *handle;
+	}
+	else
+	{
+		// find first, free handle number >0
+		// I guess, 32000 interfaces are sufficient ;-)
+		for( int i=1; i<32000; ++i )
+		{
+			if( mPort.find( i ) == mPort.end() )
+			{
+				mPort.emplace( make_pair( i, new asSerial() ) );
+				*OK = i;
+				break;
+			}
+		}// END for all possible handles
+	}//END else
+
+}// END DLLIMPORT void mount
+
+
+
+
+//************************************************************************************************
+//*** umount()
+//*** Called by Scilab's slUMount()
+//***
+//************************************************************************************************
+DLLIMPORT void umount ( int *handle, int *OK )
+{
+	*OK = 0;
+	
+	auto el = mPort.find( *handle );
+	if( el != mPort.end() )
+	{
+		delete el->second;       // destroy the asSerial object
+		mPort.erase( *handle );  // delete the container entry
+		*OK = 1;
+	}
+	
+}
+
+
+
+//************************************************************************************************
+//*** check()
+//*** Called by Scilab's slCheck()
+//***
+//************************************************************************************************
+DLLIMPORT void check ( int *handle, int *port, int *OK )
+{
+	*OK = 0;
+
+	auto el = mPort.find( *handle );
+	if( el != mPort.end() )
+		*OK = el->second->Check( *port );
+	
+}
+
+
+
+//************************************************************************************************
+//*** config()
+//*** Called by Scilab's slConfig()
+//***
+//************************************************************************************************
+DLLIMPORT void config( int *handle, int *baud, int *bits, int *parity, int *stop, int *OK )
+{
+	*OK = 0;
+
+	auto el = mPort.find( *handle );
+	if( el != mPort.end() )
+	{
+		if( el->second->ConfigComm( *baud, *bits, *parity, *stop ) == ERROR_SUCCESS )
+			*OK = 1;
+	}
+	
+}
+
+
+
+//************************************************************************************************
+//*** open()
+//*** Called by Scilab's slOpen()
+//***
+//************************************************************************************************
+DLLIMPORT void open( int *handle, int *port, int *OK )
+{
+	*OK = 0;
+
+	auto el = mPort.find( *handle );
+	if( el != mPort.end() )
+	{
+		if( el->second->Check( *port ) == 0 )
 			return;
+			
+		if( el->second->Open( *port ) == ERROR_SUCCESS )
+			*OK = 1;
 	}
-	
-	*OK=1;
+
 }
 
 
 
 //************************************************************************************************
-//***
-//***
+//*** close()
+//*** Called by Scilab's slClose()
 //***
 //************************************************************************************************
-DLLIMPORT void umount (int *handle, int *OK)
+DLLIMPORT void close ( int *handle, int *OK )
 {
-	*OK=0;
-	
-	if( (*handle<1)||(*handle>MAXPORTS))
-		return;
-	
-	if(cPort[(*handle)-1]!=NULL)
+	*OK = 0;
+
+	auto el = mPort.find( *handle );
+	if( el != mPort.end() )
 	{
-		delete cPort[(*handle)-1];
-		cPort[(*handle)-1]=NULL;
+		if( el->second->Close() == ERROR_SUCCESS )
+			*OK = 1;
 	}
-		
-	*OK=1;
-}
-
-
-
-//************************************************************************************************
-//***
-//***
-//***
-//************************************************************************************************
-DLLIMPORT void check (int *handle, int *port, int *OK)
-{
-	*OK=0;
-
-	if( (*handle<1)||(*handle>MAXPORTS))
-		return;
-	if(cPort[(*handle)-1]==NULL)
-		return;
-
-	*OK=cPort[(*handle)-1]->Check(*port);
-}
-
-
-
-
-
-//************************************************************************************************
-//***
-//***
-//***
-//************************************************************************************************
-DLLIMPORT void config(int *handle, int *baud, int *bits, int *parity, int *stop, int *OK)
-{
-	*OK = 0;
-
-	if( ( *handle < 1 ) || ( *handle > MAXPORTS ) )
-		return;
-		
-	if( cPort[(*handle)-1] == NULL )
-		return;
-
-	if( cPort[(*handle)-1]->ConfigComm(*baud, *bits, *parity, *stop) == ERROR_SUCCESS )
-		*OK = 1;
 	
 }
 
 
 
 //************************************************************************************************
-//***
-//***
+//*** sendb()
+//*** Called by Scilab's slSendByte()
 //***
 //************************************************************************************************
-DLLIMPORT void open(int *handle, int *port, int *OK)
+DLLIMPORT void sendb ( int *handle, int *byte, int *OK )
 {
 	*OK = 0;
 
-	if( ( *handle < 1 ) || ( *handle > MAXPORTS ) )
-		return;
-	if( cPort[(*handle)-1] == NULL )
-		return;
+	auto el = mPort.find( *handle );
+	if( el != mPort.end() )
+	{
+		if( el->second->SendRawByte(*byte) == ERROR_SUCCESS	)
+			*OK = 1;
+	}
 
-	if( cPort[(*handle)-1]->Check(*port) == 0 )
-		return;
-	
-	if( cPort[(*handle)-1]->Open(*port) == ERROR_SUCCESS )
-		*OK = 1;
 }
 
 
 
 //************************************************************************************************
-//***
-//***
-//***
-//************************************************************************************************
-DLLIMPORT void close (int *handle, int *OK)
-{
-	*OK=0;
-
-	if( (*handle<1)||(*handle>MAXPORTS))
-		return;
-	if(cPort[(*handle)-1]==NULL)
-		return;
-
-	if(cPort[(*handle)-1]->Close()==ERROR_SUCCESS)
-		*OK=1;
-}
-
-
-
-//************************************************************************************************
-//***
-//***
+//*** senda()
+//*** Called by Scilab's slSendArray()
 //***
 //************************************************************************************************
-DLLIMPORT void sendb (int *handle, int *byte, int *OK)
-{
-	*OK=0;
-
-	if( (*handle<1)||(*handle>MAXPORTS))
-		return;
-	if(cPort[(*handle)-1]==NULL)
-		return;
-
-	if(cPort[(*handle)-1]->SendRawByte(*byte) == ERROR_SUCCESS	)
-		*OK=1;
-}
-
-
-
-//************************************************************************************************
-//***
-//***
-//***
-//************************************************************************************************
-DLLIMPORT void senda (int *handle, int *bytes, int *length, int *OK)
+DLLIMPORT void senda ( int *handle, int *bytes, int *length, int *OK )
 {
 	int i;
 
-	*OK=0;
+	*OK = 0;
 
-	if( (*handle<1)||(*handle>MAXPORTS))
-		return;
-	if(cPort[(*handle)-1]==NULL)
-		return;
+	//*********************
+	// TODO: NEEDS CLEANUP
+	//*********************
 
 	unsigned char *tmp = new unsigned char[(*length)+8];
-	unsigned char *org=tmp;
-	int *pj=bytes;
+	unsigned char *org = tmp;
+	int *pj = bytes;
 	
-	if(tmp!=NULL)
+	if( tmp != NULL )
 	{
-		for(i=0;i<*length;i++)
-			*(tmp++)=*(pj++)&0xff;
+		for( i = 0; i < *length; i++ )
+			*(tmp++) = *(pj++) & 0xff;
 	
-		tmp=org;
-	
-		if(cPort[(*handle)-1]->SendRaw((int*)org,*length) == ERROR_SUCCESS	)
-			*OK=1;
+		tmp = org;
+
+		auto el = mPort.find( *handle );
+		if( el != mPort.end() )
+		{
+			if( el->second->SendRaw( (int*)org, *length ) == ERROR_SUCCESS )
+				*OK = 1;
+		}
 	
 		delete[] tmp;
 	}
+
 }
 
 
 
 //************************************************************************************************
-//***
-//***
+//*** count
+//*** Called by Scilab's slCount()
 //***
 //************************************************************************************************
-DLLIMPORT void count (int *handle, int *count)
+DLLIMPORT void count ( int *handle, int *count )
 {
-	if( (*handle<1)||(*handle>MAXPORTS))
-		return;
-	if(cPort[(*handle)-1]==NULL)
-		return;
+	// default is an overflow/error
+	*count = -1;
+
+	auto el = mPort.find( *handle );
+	if( el != mPort.end() )
+		*count = el->second->BufferCount();
 	
-	*count=cPort[(*handle)-1]->BufferCount();
 }
 
 
 
 
 //************************************************************************************************
-//***
-//***
+//*** recvb()
+//*** Called by Scilab's slReadByte()
 //***
 //************************************************************************************************
-DLLIMPORT void recvb (int *handle, int *block, int *byte)
+DLLIMPORT void recvb (int *handle, int *block, int *byte )
 {
-	*byte=-1;
+	*byte = -1;
 	
-	if( (*handle<1)||(*handle>MAXPORTS))
-		return;
-	if(cPort[(*handle)-1]==NULL)
-		return;
-	if(*block!=BLOCKING)
-		*block=NONBLOCKING;
-
-	*byte=cPort[(*handle)-1]->RecvRawByte(*block);
-}
-
-
-//************************************************************************************************
-//***
-//***
-//***
-//************************************************************************************************
-DLLIMPORT void flush  (int *handle, int *OK)
-{
-	*OK=0;
-	if( (*handle<1)||(*handle>MAXPORTS))
-		return;
-	if(cPort[(*handle)-1]==NULL)
-		return;
-	cPort[(*handle)-1]->BufferFlush();
-	*OK=1;
-}
-
-
-
-//************************************************************************************************
-//***
-//***
-//***
-//************************************************************************************************
-DLLIMPORT void recva (int *handle, int *bytes)
-{
-	int i,j=0;
-	int *tmp;
+	if( *block != BLOCKING )
+		*block = NONBLOCKING;
 	
-	if( (*handle < 1) || ( *handle > MAXPORTS ) )
-		return;
-	if( cPort[ (*handle) - 1 ] == NULL )
-		return;
+	auto el = mPort.find( *handle );
+	if( el != mPort.end() )
+		*byte = el->second->RecvRawByte( *block );
+	
+	
+}
 
-	tmp = bytes++;
 
-	for( i=0; i < 32; i++ )
+//************************************************************************************************
+//*** flush
+//*** Called by Scilab's slFlush()
+//***
+//************************************************************************************************
+DLLIMPORT void flush (int *handle, int *OK)
+{
+	*OK = 0;
+	
+	auto el = mPort.find( *handle );
+	if( el != mPort.end() )
 	{
-		if( ( *bytes++ = cPort[(*handle)-1]->RecvRawByte(0) ) >= 0 )
-			j++;
+		el->second->BufferFlush();
+		*OK = 1;
 	}
-	*tmp=j;
+	
 }
 
 
 
 //************************************************************************************************
-//***
-//***
+//*** recva()
+//*** Called by Scilab's slReadArray()
 //***
 //************************************************************************************************
-DLLIMPORT void recvan (int *handle, int *length, int *bytes)
+DLLIMPORT void recva ( int *handle, int *bytes )
 {
-	int i,j=0;
+	int i, j = 0;
 	int *tmp;
+
+	//*********************
+	// TODO: NEEDS CLEANUP
+	//*********************
 	
-	if( (*handle<1) || (*handle>MAXPORTS) )
-		return;
-	if( cPort[(*handle)-1] == NULL )
-		return;
-	if( *length < 1 )
-		return;
+	// first byte contains the length of the answer ( "0" aka "nothing" is the default)
+	*bytes = 0;
+	
+	auto el = mPort.find( *handle );
+	if( el != mPort.end() )
+	{
+		tmp = bytes++;
+	
+		for( i=0; i < 32; i++ )
+		{
+			if( ( *bytes++ = el->second->RecvRawByte(0) ) >= 0 )
+				j++;
+		}
+		*tmp = j;
+	
+	}
+	
+}
+
+
+
+//************************************************************************************************
+//*** recvan()
+//*** Called by Scilab's slReadArrayN()
+//***
+//************************************************************************************************
+DLLIMPORT void recvan ( int *handle, int *length, int *bytes )
+{
+	int i, j = 0;
+	int *pFirstByte;
+
+	//*********************
+	// TODO: NEEDS CLEANUP
+	//*********************
+
+	// first byte contains the length of the answer ( "0" aka "nothing" is the default)
+	*bytes = 0;
+
+	auto el = mPort.find( *handle );
+	if( el != mPort.end() )
+	{
+		// remember the address of the first byte (will later contain # of bytes read)
+		pFirstByte = bytes++;
+	
+		for( i = 0; i < (*length); ++i )
+		{
+			if( (*bytes++ = el->second->RecvRawByte(0) ) >= 0 )
+				j++;
+		}
+		
+		// store the number of received bytes to the first entry of the array
+		*pFirstByte = j;
+	}
   
-	tmp = bytes++;
-
-	for( i=0; i<(*length); i++ )
-	{
-		if( (*bytes++ = cPort[ (*handle)-1 ] -> RecvRawByte(0) ) >= 0 )
-			j++;
-	}
-	*tmp = j;
 }
 
 
 
 //************************************************************************************************
-//*** 
-//***
+//*** recvap()
+//*** Called by Scilab's slReadPacket()
 //***
 //************************************************************************************************
-DLLIMPORT void recvap (int *handle, int *length, int *bytes)
+DLLIMPORT void recvap ( int *handle, int *length, int *bytes )
 {
 	int i;
-	int *tmp;
+	int *pFirstByte;
+		
+	//*********************
+	// TODO: NEEDS CLEANUP
+	//*********************
+
+	// default length is 0 (aka: nothing was received)
+	*length = 0;
+
+	auto el = mPort.find( *handle );
+	if( el != mPort.end() )
+	{
+
+		// The first address (pFirstByte) will contain the number of bytes received.
+		pFirstByte = bytes++;
+
+		// holy mackerel...	
+		memset( (int *)bytes, 0xff, (*length) * sizeof(int) );
 	
-	if( (*handle<1) || (*handle>MAXPORTS) )
-		return;
-	if( cPort[(*handle)-1] == NULL )
-		return;
-	if( *length < 1 )
-		return;
-  
-	tmp = bytes++;
-
-	memset( (int *)bytes, 0xff, (*length) * sizeof(int) );
-
-	*tmp = cPort[(*handle)-1]->RecvRawPacketByte( bytes, *length );
+		// Results are written to <bytes>
+		*pFirstByte = el->second->RecvRawPacketByte( bytes, *length );
+	}	
+	
 }
 
 
 
 //************************************************************************************************
-//*** countp
+//*** countp()
+//*** Called by Scilab's slCount()
 //***
 //*** Count number of complete packets in buffer.
 //************************************************************************************************
-DLLIMPORT void countp (int *handle, int *count)
+DLLIMPORT void countp ( int *handle, int *count )
 {
-	if( (*handle<1)||(*handle>MAXPORTS))
-		return;
-	if(cPort[(*handle)-1]==NULL)
-		return;
-	
-	*count = cPort[(*handle)-1]->BufferCountPackets();
+	*count = 0;
+
+	auto el = mPort.find( *handle );
+	if( el != mPort.end() )
+		*count = el->second->BufferCountPackets();
+		
 }
 
 
 
 //************************************************************************************************
-//***
-//***
+//*** sendp()
+//*** Called by Scilab's slSendPacket()
 //***
 //************************************************************************************************
-DLLIMPORT void sendp (int *handle, int *bytes, int *length, int *OK)
+DLLIMPORT void sendp ( int *handle, int *bytes, int *length, int *OK )
 {
 	int i;
 
-	*OK=0;
+	*OK = 0;
 
-	if( (*handle<1)||(*handle>MAXPORTS))
-		return;
-	if(cPort[(*handle)-1]==NULL)
-		return;
-
-	if(cPort[(*handle)-1]->SendPacket(bytes,*length) == ERROR_SUCCESS	)
-		*OK=1;
+	auto el = mPort.find( *handle );
+	if( el != mPort.end() )
+	{
+		if( el->second->SendPacket( bytes, *length ) == ERROR_SUCCESS )
+			*OK = 1;
+	}
 
 }
 
 
 
 //************************************************************************************************
-//***
-//***
+//*** packs()
+//*** Called by Scilab's slSetPacketStart()
 //***
 //************************************************************************************************
-DLLIMPORT void packs (int *handle, int *packstart, int *OK)
+DLLIMPORT void packs ( int *handle, int *packstart, int *OK )
 {
 	int i;
 
-	*OK=0;
+	*OK = 0;
 
-	if( ( *handle < 1 ) || ( *handle > MAXPORTS ) )
-		return;
-		
-	if( cPort[ (*handle) -1 ] == NULL )
-		return;
+	auto el = mPort.find( *handle );
+	if( el != mPort.end() )
+	{
+		if( el->second->ConfigPacketStart( packstart ) == ERROR_SUCCESS	)
+			*OK = 1;
+	}
 
-	if( cPort[ (*handle) - 1 ]->ConfigPacketStart( packstart ) == ERROR_SUCCESS	)
-		*OK=1;
+
 }
 
 
 
 //************************************************************************************************
-//***
-//***
+//*** packe()
+//*** Called by Scilab's slSetPacketEnd()
 //***
 //************************************************************************************************
-DLLIMPORT void packe (int *handle, int *packend, int *OK)
+DLLIMPORT void packe (int *handle, int *packend, int *OK )
 {
 	int i;
 
-	*OK=0;
+	*OK = 0;
 
-	if( ( *handle < 1 ) || ( *handle > MAXPORTS ) )
-		return;
-		
-	if( cPort[ (*handle) - 1 ] == NULL )
-		return;
+	auto el = mPort.find( *handle );
+	if( el != mPort.end() )
+	{
+		if( el->second->ConfigPacketEnd( packend ) == ERROR_SUCCESS	)
+			*OK = 1;
+	}
 
-	if( cPort[ (*handle) - 1 ]->ConfigPacketEnd( packend ) == ERROR_SUCCESS	)
-		*OK=1;
 }
 
 
 
 //************************************************************************************************
-//***
-//***
+//*** packc()
+//*** Called by Scilab's slSetPacketChar()
 //***
 //************************************************************************************************
-DLLIMPORT void packc (int *handle, int *packchar, int *OK)
+DLLIMPORT void packc ( int *handle, int *packchar, int *OK )
 {
-	*OK=0;
+	*OK = 0;
 
-	if( ( *handle < 1 ) || ( *handle > MAXPORTS ) )
-		return;
-		
-	if( cPort[ (*handle) - 1 ] == NULL )
-		return;
+	auto el = mPort.find( *handle );
+	if( el != mPort.end() )
+	{
+		if( el->second->ConfigPacketChar( *packchar ) == ERROR_SUCCESS	)
+			*OK = 1;
+	}
 
-	if( cPort[ (*handle) - 1 ]->ConfigPacketChar( *packchar ) == ERROR_SUCCESS	)
-		*OK=1;
 }
 
 
 
 //************************************************************************************************
-//***
-//***
+//*** DllMain
+//*** Called by nothing
 //***
 //************************************************************************************************
 BOOL APIENTRY DllMain (HINSTANCE hInst, DWORD reason, LPVOID reserved)

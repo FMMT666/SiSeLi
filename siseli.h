@@ -18,7 +18,7 @@
 
 
 
-#define SISELI_VER  06						// decimal notation
+#define SISELI_VER  07						// decimal notation
 
 
 // CHANGES:
@@ -34,18 +34,21 @@
 //
 //		V0.5:
 //			- added baudrates >256000, up to 3MBit/s
-// 			- removed an error handling bug in some functions (see "ERROROR")
+//			- removed an error handling bug in some functions (see "ERROROR")
 //
 //		V0.6:
 //			- experimental packet receive algorithm
-//      - reworked the packet algorithm ("DLE" standard):
-//        - always two byte packet start     [DLE][STA]
-//        - always two byte packet end       [DLE][END]
-//        - special character is always DLE  [DLE]
-//        - packet end can be skippped (first entry in <packetEnd[]> array set to -1
-//        - packet start can not be skipped
+//			- reworked the packet algorithm ("DLE" standard):
+//				- always two byte packet start     [DLE][STA]
+//				- always two byte packet end       [DLE][END]
+//				- special character is always DLE  [DLE]
+//				- packet end can be skippped (first entry in <packetEnd[]> array set to -1
+//				- packet start can not be skipped
 //
-
+//		V0.6:
+//			- removed the "char *cPort[]" array and replaced it with a "map<int,asSerial>" container
+//			- introduced new "slMount()" behaviour without the handle argument (but still compatible to the old version)
+//
 
 
 #ifndef _SISELI_H_
