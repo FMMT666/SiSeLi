@@ -82,7 +82,7 @@ DLLIMPORT void mount ( int *handle, int *OK )
 	if(  ( *handle != 0 ) && ( mPort.find( *handle ) == mPort.end() )  )
 	{
 		// compatibility mode; check if requested handle is available
-		mPort.emplace( make_pair( *handle, new asSerial() ) );
+		mPort.emplace( *handle, new asSerial() );
 		*OK = *handle;
 	}
 	else
@@ -93,7 +93,7 @@ DLLIMPORT void mount ( int *handle, int *OK )
 		{
 			if( mPort.find( i ) == mPort.end() )
 			{
-				mPort.emplace( make_pair( i, new asSerial() ) );
+				mPort.emplace( i, new asSerial() );
 				*OK = i;
 				break;
 			}
@@ -410,9 +410,6 @@ DLLIMPORT void recvap ( int *handle, int *length, int *bytes )
 	//*********************
 	// TODO: NEEDS CLEANUP
 	//*********************
-
-	// default length is 0 (aka: nothing was received)
-	*length = 0;
 
 	auto el = mPort.find( *handle );
 	if( el != mPort.end() )

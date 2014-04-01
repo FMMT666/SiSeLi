@@ -41,6 +41,9 @@
 #define OPENED					1
 
 
+using namespace std;
+
+
 //
 // TODO:
 //   - replace manually handled buffer by STL container (see ***REFACBUF*** marks)
