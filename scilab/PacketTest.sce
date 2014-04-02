@@ -55,7 +55,7 @@ slSendByte(1,65)
 slSendPacket(1,a,3)
 slSendPacket(1,a,4)
 
-sleep(1000)
+sleep(500)
 
 slCountPacket(1)
 

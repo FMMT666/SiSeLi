@@ -20,45 +20,25 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <deque>
+#include <cstdint>
 
 #include "asSerial.h"
 
 #include "Serial.h"
 
-// "private" defines
-#define BUF_RX_SIZE 		30000
-#define BUF_TX_SIZE 		1024
-//#define TIME_RX_THREAD	   5	// polling delay of RX thread (if commented out, sleep() is skipped)
-
-#if BUF_RX_SIZE > 31000
-#error BUF_RX_SIZE must not exceed 31000 bytes! Check "asSerial.cpp"!
-#endif
-#if BUF_TX_SIZE > 31000
-#error BUF_TX_SIZE must not exceed 31000 bytes! Check "asSerial.cpp"!
-#endif
-
 #define CLOSED					0
 #define OPENED					1
-
 
 using namespace std;
 
 
-//
+
+
 // TODO:
-//   - replace manually handled buffer by STL container (see ***REFACBUF*** marks)
-//     As it seems, all changes will be transparent to the overlaying handling.
-//     possible pitfalls: "snif(f) buffer"
-//
-//   - get rid of all those C casts
-//
-//   - It should not be necessary to extract the buffer and create a new class,
-//     but it would be worth taking a closer look at this.
-//
-//   - add doxygen stuff
-//     
+//   - get rid of all those C casts and other, none-C++(11) stuff
+//   - add doxygen doc
 //   - check if it's REALLY modular, this time...
-//
 //   - ...
 
 
@@ -87,7 +67,6 @@ class asSerial::Secret
 		// the main serial interface
 		class CSerial serial;
 
-		// TOCHK: why are these public???
 		// port related variables
 		int				port;										// COM port 1-99
 		long			baudrate;								// 300-3000000
@@ -95,7 +74,6 @@ class asSerial::Secret
 		int				parity;									// NOPARITY, ODDPARITY, EVENPARITY
 		int				stop;										// NOSTOPBIT, ONE5STOPBITS, TWOSTOPBITS
 
-		// TOCHK: why are these public???
 		// packet related variables
 		int				packetMode;							// 1 enables packet mode (only valid for receiving data)
 		int				packetStart[2];					// packet start identifier (e.g.: 0x10,0x02)
@@ -105,8 +83,8 @@ class asSerial::Secret
 		// buffer stuff
 		int				RXBufWriteByte(int ch);
 		int				RXBufReadByte(int blocked);
-		int				RXBufSnifByte();				// "read" byte without removing it from the buffer
-		void			RXBufSnifReset();				// resets the sniff pointer to the current read index
+		int				RXBufSniffByte();				// "read" byte without removing it from the buffer
+		void			RXBufSniffReset();			// resets the sniff pointer to the current read index
 		void			RXBufFlush();
 		int				RXBufCount();						// returns number of bytes in RX buffer; returns -1 on overflow
 
@@ -122,14 +100,10 @@ class asSerial::Secret
 		int				portState;							// port state
 		
 		// port buffers and vars (internal)
-		void			RXBufInit();					
-		void			RXBufFill(char ch);			// writes new data to RX buffer              ***REFACBUF***
-		unsigned char RXBuf[BUF_RX_SIZE];	// RX ringbuffer (filled by thread)
-		volatile unsigned RXBufW;					// write buffer index
-		volatile unsigned	RXBufR;					// read buffer index
-		volatile unsigned	RXBufC;					// number of bytes in buffer
-		volatile unsigned	RXBufO;					// overflow flag
-		volatile unsigned	RXBufS;					// snif buffer index
+		void							RXBufInit();					
+		deque<uint8_t>		RXBufQueue;			// the new buffer; we'll need a deque because of the "sniff" feature
+		volatile bool     RXBufOverflow;	// overflow flag
+		volatile unsigned	RXBufSniffIndex;// sniff buffer index
 		
 };
 
@@ -148,10 +122,10 @@ class asSerial::Secret
 //************************************************************************************************
 asSerial::Secret::Secret()
 {
-	baudrate = CSerial::EBaudrate(19200);
-	bits     = CSerial::EDataBits(8);
-	parity   = CSerial::EParity(NOPARITY);
-	stop     = CSerial::EStopBits(ONESTOPBIT);
+	baudrate = CSerial::EBaudrate( 19200 );
+	bits     = CSerial::EDataBits( 8 );
+	parity   = CSerial::EParity( NOPARITY );
+	stop     = CSerial::EStopBits( ONESTOPBIT );
 
 	packetMode = 0; // only for RX thread; TX can be used all the time
 	
@@ -186,14 +160,14 @@ asSerial::Secret::~Secret()
 //************************************************************************************************
 //*** asSerial::Secret::RXBufThread()
 //***
-//***
+//*** 
 //************************************************************************************************
 DWORD WINAPI asSerial::Secret::RXBufThread( LPVOID param )
 {
 	int ch;
 	DWORD count;
 
-	asSerial::Secret *pt = static_cast<asSerial::Secret *>(param);
+	asSerial::Secret *pt = static_cast<asSerial::Secret *>( param );
 
 	do
 	{
@@ -253,16 +227,11 @@ void asSerial::Secret::RXBufThreadStop()
 //************************************************************************************************
 void asSerial::Secret::RXBufInit()
 {
-
-	// **************
-	// ***REFACBUF***
-	// **************
+	RXBufSniffIndex = 0;
+	RXBufOverflow   = false;
 	
-	RXBufW = 0;
-	RXBufR = 0;
-	RXBufC = 0;
-	RXBufO = 0;
-	RXBufS = 0;
+	RXBufQueue.clear();
+	
 }
 
 
@@ -272,31 +241,21 @@ void asSerial::Secret::RXBufInit()
 //***
 //***
 //************************************************************************************************
-int asSerial::Secret::RXBufWriteByte(int ch)
+int asSerial::Secret::RXBufWriteByte( int ch )
 {
 	
-	// **************
-	// ***REFACBUF***
-	// **************
-	
-	// if an overflow already occured, do nothing
-	if(RXBufO)
- 		return 0;
-	
-	// check end of ringbuffer
-	if((RXBufW++) >= BUF_RX_SIZE )
-		RXBufW=0;
-
-	// check overflow
-	if(RXBufW == RXBufR )
+	if( RXBufOverflow )
+		return 0;
+		
+	try
 	{
-		RXBufInit();
-		RXBufO=1;
+		RXBufQueue.push_back( ch & 0xff );
+	}
+	catch(...)
+	{
+		RXBufOverflow = true;
 		return 0;
 	}
-
-	RXBuf[RXBufW]=(unsigned char)(ch&0xff);
-	RXBufC++;
 	
 	return 1;
 }
@@ -308,76 +267,67 @@ int asSerial::Secret::RXBufWriteByte(int ch)
 //***
 //*** TODO: no read in here, yet!
 //************************************************************************************************
-int asSerial::Secret::RXBufReadByte(int blocked)
+int asSerial::Secret::RXBufReadByte( int blocked )
 {
-	
-	// **************
-	// ***REFACBUF***
-	// **************
 
-	
-	if(blocked==BLOCKING)
+	if( blocked == BLOCKING )
 	{
-		while (RXBufW == RXBufR)
+		// wait until data arrives
+		while ( RXBufQueue.empty() )
 		{;}
 	}
 	else
 	{
-		if(RXBufW == RXBufR)
+		// no data received yet
+		if ( RXBufQueue.empty() )
 			return -1;
 	}
+
+	int ret = RXBufQueue.front();
+	RXBufQueue.pop_front();	
 	
-	if((RXBufR++) >= BUF_RX_SIZE )
-		RXBufR=0;
-
-	if(RXBufC>0)
-		RXBufC--;
-
-	// TODO: Is it wise to reset the sniff-buffer	pointer here?
-	RXBufS=RXBufR;
-		
-	return RXBuf[RXBufR] & 0xff;
+	return ret;
+	
 }
 
 
 
 //************************************************************************************************
-//*** asSerial::Secret::RXBufSnifByte()
+//*** asSerial::Secret::RXBufSniffByte()
 //***
 //*** TODO: no read in here, yet!
 //************************************************************************************************
-int asSerial::Secret::RXBufSnifByte()
+int asSerial::Secret::RXBufSniffByte()
 {
-	
-	// **************
-	// ***REFACBUF***
-	// **************
-	
-	
-	if(RXBufW == RXBufS)
+
+	if( RXBufQueue.empty() )
 		return -1;
-	
-	if((RXBufS++) >= BUF_RX_SIZE )
-		RXBufS=0;
-	
-	return RXBuf[RXBufS] & 0xff;
+
+	int ret;
+	try
+	{
+		// TOCHK!
+		ret = RXBufQueue.at( RXBufSniffIndex++ );
+	}
+	catch(...)
+	{
+		ret = -1;
+	}
+
+	return ret;
+
 }
 
 
 
 //************************************************************************************************
-//*** asSerial::Secret::RXBufSnifReset()
+//*** asSerial::Secret::RXBufSniffReset()
 //***
 //***
 //************************************************************************************************
-void asSerial::Secret::RXBufSnifReset()
+void asSerial::Secret::RXBufSniffReset()
 {
-	
-	// **************
-	// ***REFACBUF***
-	// **************
-	
-	RXBufS=RXBufR;
+	RXBufSniffIndex = 0;
 }
 
 
@@ -401,15 +351,7 @@ void asSerial::Secret::RXBufFlush()
 //************************************************************************************************
 int asSerial::Secret::RXBufCount()
 {
-	
-	// **************
-	// ***REFACBUF***
-	// **************
-	
-	if(RXBufO)
-		return -1;	// overflow
-	else
-		return RXBufC;
+	return RXBufQueue.size();
 }
 
 
@@ -463,21 +405,21 @@ int asSerial::ConfigComm(long baud, int bits, int parity, int stop)
 		return ERROROR;
 
 	my->baudrate = CSerial::EBaudrate(baud);	
-	my->bits =     CSerial::EDataBits(bits);	
+	my->bits     = CSerial::EDataBits(bits);	
 
 	switch(parity)
 	{
-		case 0: my->parity = CSerial::EParity(NOPARITY); break;
-		case 1: my->parity = CSerial::EParity(ODDPARITY); break;
-		case 2: my->parity = CSerial::EParity(EVENPARITY); break;
+		case  0: my->parity = CSerial::EParity(NOPARITY); break;
+		case  1: my->parity = CSerial::EParity(ODDPARITY); break;
+		case  2: my->parity = CSerial::EParity(EVENPARITY); break;
 		default: return ERROROR;
 	}
 	
 	switch(stop)
 	{
-		case 1: my->stop = CSerial::EStopBits(ONESTOPBIT); break;
-		case 2: my->stop = CSerial::EStopBits(TWOSTOPBITS); break;
-		case 15:my->stop = CSerial::EStopBits(ONE5STOPBITS); break;
+		case  1: my->stop = CSerial::EStopBits(ONESTOPBIT); break;
+		case  2: my->stop = CSerial::EStopBits(TWOSTOPBITS); break;
+		case 15: my->stop = CSerial::EStopBits(ONE5STOPBITS); break;
 		default: return ERROROR;
 	}
 	
@@ -492,10 +434,10 @@ int asSerial::ConfigComm(long baud, int bits, int parity, int stop)
 //***
 //***
 //************************************************************************************************
-int asSerial::Check(int port)
+int asSerial::Check ( int port )
 {
-	std::string tmp="\\\\.\\COM"+myitoa(port);
-	if (my->serial.CheckPort(tmp.c_str()) == CSerial::EPortAvailable)
+	std::string tmp = "\\\\.\\COM" + myitoa( port );
+	if( my->serial.CheckPort( tmp.c_str() ) == CSerial::EPortAvailable )
 		return 1;
 	else
 		return 0;
@@ -510,23 +452,23 @@ int asSerial::Check(int port)
 //************************************************************************************************
 int asSerial::Open(int port)
 {
-	std::string tmp="\\\\.\\COM"+myitoa(port);
-	LONG res = my->serial.Open(tmp.c_str(),0,0,false);
-	if(res==ERROR_SUCCESS)
+	std::string tmp = "\\\\.\\COM" + myitoa( port );
+	LONG res = my->serial.Open( tmp.c_str(), 0, 0, false );
+	if( res == ERROR_SUCCESS )
 	{
-		my->serial.SetupReadTimeouts(CSerial::EReadTimeout(0));		
-		if(my->serial.Setup(
-				CSerial::EBaudrate(my->baudrate),
-				CSerial::EDataBits(my->bits),
-				CSerial::EParity(my->parity),
-				CSerial::EStopBits(my->stop))
-				== ERROR_SUCCESS)
+		my->serial.SetupReadTimeouts( CSerial::EReadTimeout(0) );		
+		if( my->serial.Setup(
+					CSerial::EBaudrate( my->baudrate ),
+					CSerial::EDataBits( my->bits ),
+					CSerial::EParity( my->parity ),
+					CSerial::EStopBits( my->stop ) )
+					== ERROR_SUCCESS )
 		{
-			if(my->RXBufThreadStart()==NULL)
-				res=ERROROR;
+			if( my->RXBufThreadStart() == NULL )
+				res = ERROROR;
 		}
 		else
-			res=ERROROR;
+			res = ERROROR;
 	}
 	return res;
 }
@@ -538,7 +480,7 @@ int asSerial::Open(int port)
 //***
 //***
 //************************************************************************************************
-int asSerial::Close(void)
+int asSerial::Close ( void )
 {
 	my->RXBufThreadStop();
 	return (int)my->serial.Close();
@@ -551,9 +493,9 @@ int asSerial::Close(void)
 //***
 //***
 //************************************************************************************************
-int asSerial::SendRaw(int *data, int len)
+int asSerial::SendRaw ( int *data, int len )
 {
-	return (int) my->serial.Write(data,len);
+	return (int) my->serial.Write( data, len );
 }
 
 
@@ -563,9 +505,9 @@ int asSerial::SendRaw(int *data, int len)
 //***
 //***
 //************************************************************************************************
-int asSerial::SendRawByte(int ch)
+int asSerial::SendRawByte ( int ch )
 {
-	return (int) my->serial.Write((char *)&ch,1);
+	return (int) my->serial.Write( (char *)&ch, 1 );
 }
 
 
@@ -575,9 +517,9 @@ int asSerial::SendRawByte(int ch)
 //***
 //***
 //************************************************************************************************
-int asSerial::RecvRawByte(int blocked=NONBLOCKING)
+int asSerial::RecvRawByte ( int blocked = NONBLOCKING )
 {
-	return my->RXBufReadByte(blocked);
+	return my->RXBufReadByte( blocked );
 }
 
 
@@ -586,7 +528,7 @@ int asSerial::RecvRawByte(int blocked=NONBLOCKING)
 //***
 //***
 //************************************************************************************************
-int asSerial::BufferCount()
+int asSerial::BufferCount ()
 {
 	return my->RXBufCount();
 }
@@ -597,7 +539,7 @@ int asSerial::BufferCount()
 //***
 //***
 //************************************************************************************************
-void asSerial::BufferFlush()
+void asSerial::BufferFlush ()
 {
 	my->RXBufFlush();
 }
@@ -608,13 +550,15 @@ void asSerial::BufferFlush()
 //***
 //***
 //************************************************************************************************
-int asSerial::ConfigPacketStart(int *start)
+int asSerial::ConfigPacketStart ( int *start )
 {
 	int i;
 	
 	my->packetStart[1] = *start;
+	
 	if( my->packetStart[1] > 255 )
 		my->packetStart[1] = 255;
+		
 	if( my->packetStart[1] < 0 )
 		my->packetStart[1] = 0;
 
@@ -627,13 +571,15 @@ int asSerial::ConfigPacketStart(int *start)
 //***
 //***
 //************************************************************************************************
-int asSerial::ConfigPacketEnd(int *end)
+int asSerial::ConfigPacketEnd ( int *end )
 {
 	int i;
 	
 	my->packetEnd[1] = (*end++);
+	
 	if( my->packetEnd[1] > 255 ) 
 		my->packetEnd[1] = 255;
+		
 	// future upgrade already implemented ;-)		
 	if( my->packetEnd[1] < -1 ) 
 		my->packetEnd[1] = -1;
@@ -647,13 +593,16 @@ int asSerial::ConfigPacketEnd(int *end)
 //***
 //***
 //************************************************************************************************
-int asSerial::ConfigPacketChar(int ch)
+int asSerial::ConfigPacketChar ( int ch )
 {
 	my->packetChar = ch;
+	
 	if( my->packetChar > 255 )
 		my->packetChar = 255;
+		
 	if( my->packetChar < 0 )
 		my->packetChar = 0;
+		
 	// NEW as of V06
 	my->packetStart[0] = my->packetChar;
 	my->packetEnd[0] = my->packetChar;
@@ -668,13 +617,13 @@ int asSerial::ConfigPacketChar(int ch)
 //***
 //***
 //************************************************************************************************
-int asSerial::SendPacket(int *data, int len)
+int asSerial::SendPacket ( int *data, int len )
 {
 	int i;
 	int OK = ERROROR;
 	int nlen = 0;
 	
-	unsigned char *tmp = new unsigned char[ len * 2 + 12]; // worst case
+	unsigned char *tmp = new unsigned char[ len * 2 + 12 ]; // worst case
 	unsigned char *org = tmp;
 	int *pj = data;
 	
@@ -731,7 +680,7 @@ int asSerial::SendPacket(int *data, int len)
 
 		tmp = org;
 	
-		OK = SendRaw(( int*)org, nlen );
+		OK = SendRaw( (int*)org, nlen );
 	
 		delete[] tmp;
 	}
@@ -752,7 +701,7 @@ int asSerial::BufferCountPackets()
 	int nPackets = 0;
 	int state = 0;
 
-	my->RXBufSnifReset();
+	my->RXBufSniffReset();
 
 	for(;;)
 	{
@@ -761,7 +710,7 @@ int asSerial::BufferCountPackets()
 			return -1;
 		
 		// "sniff" a byte (read it but do not remove it from the receive buffer)
-		i = my->RXBufSnifByte();
+		i = my->RXBufSniffByte();
 		if( i < 0 )
 			return nPackets;
 
