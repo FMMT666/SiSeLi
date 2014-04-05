@@ -12,7 +12,7 @@ ResourceIncludes=
 MakeIncludes=
 Compiler=-DBUILDING_DLL=1_@@_
 CppCompiler=-DBUILDING_DLL=1_@@_
-Linker=--no-export-all-symbols_@@_--add-stdcall-alias_@@_lib/SerialCore_x86.a_@@_-m32_@@_
+Linker=--no-export-all-symbols_@@_--add-stdcall-alias_@@_lib/SerialCore_x86.a_@@_
 IsCpp=1
 Icon=
 ExeOutput=out
@@ -26,8 +26,8 @@ UseCustomMakefile=0
 CustomMakefile=
 IncludeVersionInfo=1
 SupportXPThemes=0
-CompilerSet=3
-CompilerSettings=00000001g0000000000000000
+CompilerSet=7
+CompilerSettings=0000000000000000000000000
 LogOutput=
 LogOutputEnabled=0
 
