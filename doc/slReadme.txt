@@ -834,6 +834,7 @@
 
     V0.7, refactoring
       - *NEW* switched over to TDM-GCC and Code::Blocks
+      - *NEW* slLoadLib.sci now auto-selects the right DLL (x86/x64)
       - *NEW* started to remove old C-style stuff
       - *NEW* unlimited amount of serial ports (previously limited to 16)
       - *CHG* slMount() does not require the handle argument any longer.

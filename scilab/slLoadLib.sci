@@ -1,6 +1,6 @@
 mode(0)  // echo off
 // #############################
-// ### SCILAB LIBRARY LOADER ### V2.0
+// ### SCILAB LIBRARY LOADER ### V2.1
 // #############################
 //
 // ScilabSerialLib (SiSeLi)
@@ -38,10 +38,13 @@ mode(0)  // echo off
 // CHANGES V2.0, 04/2014:
 //  - changed "slMount()" behaviour (no argument by default, but remain compatibility)
 //  - changed "slReadByte()" behaviour (2nd argument not required; NONBLOCKING by default)
-// 
+//
+// CHANGES V2.1, 04/2014:
+//  - implemented x86/x64 DLL auto-load
+//
 
 
-SLLOADERVERSION = "2.0";
+SLLOADERVERSION = "2.1";
 
 
 // check if lib is already loaded
@@ -65,28 +68,35 @@ end
 function slLoad()
     global slFuncs;
     printf("\n---\nSISELI Loader V%s\n\n", SLLOADERVERSION);
+    [name,info]=getversion();
+    if info(2) == "x64" then
+        dllName = "siseli_x64.dll"
+    else
+        dllName = "siseli_x86.dll"
+    end
+    printf("LOADING %s\n\n", dllName);
     try
-        slFuncs(1,1)= link("siseli.dll","init","c");
-        slFuncs(1,2)= link("siseli.dll","version","c");
-        slFuncs(1,3)= link("siseli.dll","mount","c");
-        slFuncs(1,4)= link("siseli.dll","umount","c");
-        slFuncs(1,5)= link("siseli.dll","check","c");
-        slFuncs(1,6)= link("siseli.dll","config","c");
-        slFuncs(1,7)= link("siseli.dll","open","c");
-        slFuncs(1,8)= link("siseli.dll","close","c");
-        slFuncs(1,9)= link("siseli.dll","sendb","c");
-        slFuncs(1,10)=link("siseli.dll","senda","c");
-        slFuncs(1,11)=link("siseli.dll","count","c");
-        slFuncs(1,12)=link("siseli.dll","recvb","c");
-        slFuncs(1,13)=link("siseli.dll","flush","c");
-        slFuncs(1,14)=link("siseli.dll","recva","c");
-        slFuncs(1,15)=link("siseli.dll","sendp","c");
-        slFuncs(1,16)=link("siseli.dll","packs","c");
-        slFuncs(1,17)=link("siseli.dll","packe","c");
-        slFuncs(1,18)=link("siseli.dll","packc","c");
-        slFuncs(1,19)=link("siseli.dll","recvan","c");
-        slFuncs(1,20)=link("siseli.dll","recvap","c");
-        slFuncs(1,21)=link("siseli.dll","countp","c");
+        slFuncs(1,1)= link(dllName,"init","c");
+        slFuncs(1,2)= link(dllName,"version","c");
+        slFuncs(1,3)= link(dllName,"mount","c");
+        slFuncs(1,4)= link(dllName,"umount","c");
+        slFuncs(1,5)= link(dllName,"check","c");
+        slFuncs(1,6)= link(dllName,"config","c");
+        slFuncs(1,7)= link(dllName,"open","c");
+        slFuncs(1,8)= link(dllName,"close","c");
+        slFuncs(1,9)= link(dllName,"sendb","c");
+        slFuncs(1,10)=link(dllName,"senda","c");
+        slFuncs(1,11)=link(dllName,"count","c");
+        slFuncs(1,12)=link(dllName,"recvb","c");
+        slFuncs(1,13)=link(dllName,"flush","c");
+        slFuncs(1,14)=link(dllName,"recva","c");
+        slFuncs(1,15)=link(dllName,"sendp","c");
+        slFuncs(1,16)=link(dllName,"packs","c");
+        slFuncs(1,17)=link(dllName,"packe","c");
+        slFuncs(1,18)=link(dllName,"packc","c");
+        slFuncs(1,19)=link(dllName,"recvan","c");
+        slFuncs(1,20)=link(dllName,"recvap","c");
+        slFuncs(1,21)=link(dllName,"countp","c");
     catch
         printf("\n*\n")
         printf("* ERROR: Unable to load ScilabSerialLibrary\n*\n\n")
