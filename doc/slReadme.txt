@@ -13,10 +13,12 @@
 
       FEATURES:
 
+        - no installation required; Just copy SiSeLi into your Scilab project directory.
         - Supports all kinds of serial ports, including USB, Bluetooth or virtual connections.      
         - baud rates up to 3MBit/s
-        - up to 16 simultaneous connections
-        - easy to use
+        - unlimited amount of simultaneous connections
+        - supports DLE sequenced packet mechanism
+        - it rocks
         - ...
 
 
@@ -57,10 +59,10 @@
     
 1.3 DEVELOPMENT ENVIRONMENT
 
-    This one was created with the great DEV-CPP, freely available from
-      http://www.bloodshed.net/devcpp.html
-    or
-      http://www.bloodshed.net/dev/    
+    The source code and additional information about how to build your own SiSeLi DLL, can be
+    found at Github:
+    
+      https://github.com/FMMT666/SiSeLi
     
     
 1.4 FUTURE DEVELOPMENT, TODO LIST:
@@ -74,27 +76,25 @@
     DOC
     . slReadme.txt          -> what you're reading, right now
     .   ...
-    SCILAB
-    . siseli.dll            -> ScilabSerialLib
+    SISELI
+    . siseli_x86.dll        -> ScilabSerialLib, 32 bit version
+    . siseli_x64.dll        -> ScilabSerialLib, 64 bit version
     . LoopDemo.sce          -> example usage
-    . LoopDemoAllInOne.sce  -> example usage in one file, including the wrapper functions;
-    .   ...                    just for reference
+    . PacketTest.sce        -> example usage for sending/receiving packets
     . slLoadLib.sci         -> a script to load the library and all necessary wrapper functions
-    SOURCE
-    . SiSeLi_Vxy.zip        -> source code
-    . CSERIAL
-      . cserial.zip         -> slightly modified (and DEV-CPPed) CSerial object; used by SiSeLi
-                               http://www.ramondeklein.nl/Projects/Serial.html
-
+    
+    README.md               -> coarse overview and release notes
+    README.html             -> same in HTML format
+    copyright.txt           -> copyright notice
                                
       
 2.0 EXAMPLE USAGE
 
     For an in-depth explanation of (all) the SiSeLi Scilab-wrapper functions, see chapter 3.
 
-    Extract SiSeLi's SCILAB directory, or only "siseli.dll" to a new directory on your hard disk.
-    Start Scilab and change the path to there.
-
+    You don't need to install anything. Just copy the two DLLs and "slLoadLib.sci" to your
+    Scilab working directory and change Scilab's working path to there. That's all...
+    
     - Load the libary:
 
         exec("slLoadLib.sci")
@@ -833,6 +833,7 @@
       - *CHG* increased simultaneously usable serial ports to 16
 
     V0.7, refactoring
+      - *NEW* switched over to TDM-GCC and Code::Blocks
       - *NEW* started to remove old C-style stuff
       - *NEW* unlimited amount of serial ports (previously limited to 16)
       - *CHG* slMount() does not require the handle argument any longer.

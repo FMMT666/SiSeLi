@@ -1,13 +1,3 @@
-#### WARNING ####
-
-The "DevCPP2014" branch is not fully tested and will not yet compile on x86
-machines because of some bugs in the TDM-GCC release.
-  
-The x64 version is not affected.
-
-
-----------------------------------------------------------------------------------
-
 
 SiSeLi
 ======
@@ -15,6 +5,7 @@ SiSeLi
 A serial port library for [Scilab][1].
 
     FEATURES:
+        - no installation required; Just copy SiSeLi into your Scilab project directory.
         - Supports all kinds of serial ports, including USB, Bluetooth or virtual connections.      
         - baud rates up to 3MBit/s
         - unlimited amount of simultaneous connections
@@ -23,7 +14,7 @@ A serial port library for [Scilab][1].
 
 
 These sources come with all necessary project files for building a
-x86 or x64 DLL with either [Dev-C++][4] or [Orwell Dev-C++][5].
+x86 or x64 DLL with [Code::Blocks][4] and the [TDM-GCC][5] compiler.
 
 
 For binaries, documentation and examples, go [this way][2].  
@@ -33,9 +24,19 @@ via [Scilab Atoms][3] too.
 
 ----------------------------------------------------------------------------------
 ## TODO
-  - auto load x86/x64 libs
-  - fix x86 build problems
+  - auto load x86/x64 libs in Scilab
   - buy more beer
+
+
+----------------------------------------------------------------------------------
+## BUILDING
+
+SiSeLi's source code comes with two separate Code::Blocks project files for
+32- or 64-bit DLL compilation.
+
+Due to some bugs in the TDM64-GCC, you can (currently) NOT build 32 bit DLLs
+with it, hence, the 32 bit project file requires an installation of the
+32 bit TDM-GCC edition.
 
 
 ----------------------------------------------------------------------------------
@@ -67,6 +68,7 @@ via [Scilab Atoms][3] too.
     - CHG: increased simultaneously usable serial ports to 16
 
 ### V0.7, refactoring and minor improvements
+    - NEW: switched over to TDM-GCC and Code::Blocks
     - NEW: started to remove old C-style stuff
     - NEW: unlimited amount of serial ports (previously limited to 16)
     - CHG: slMount() does not require the handle argument any longer.
@@ -80,5 +82,5 @@ FMMT666(ASkr)
 [1]: http://www.scilab.org
 [2]: http://www.askrprojects.net/software/siseli/index.html
 [3]: http://atoms.scilab.org/toolboxes/siseli
-[4]: http://www.bloodshed.net/download.html
-[5]: http://orwelldevcpp.blogspot.de/
+[4]: http://www.codeblocks.org/
+[5]: http://tdm-gcc.tdragon.net/
